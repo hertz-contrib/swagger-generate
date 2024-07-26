@@ -22,17 +22,15 @@ import (
 	"google.golang.org/protobuf/runtime/protoimpl"
 )
 
-var (
-	HttpMethodOptions = map[*protoimpl.ExtensionInfo]string{
-		E_Get:     "GET",
-		E_Post:    "POST",
-		E_Put:     "PUT",
-		E_Patch:   "PATCH",
-		E_Delete:  "DELETE",
-		E_Options: "OPTIONS",
-		E_Head:    "HEAD",
-	}
-)
+var HttpMethodOptions = map[*protoimpl.ExtensionInfo]string{
+	E_Get:     "GET",
+	E_Post:    "POST",
+	E_Put:     "PUT",
+	E_Patch:   "PATCH",
+	E_Delete:  "DELETE",
+	E_Options: "OPTIONS",
+	E_Head:    "HEAD",
+}
 
 func GetAllOptions(extensions map[*protoimpl.ExtensionInfo]string, opts ...protoreflect.ProtoMessage) map[string]interface{} {
 	out := map[string]interface{}{}

@@ -6,7 +6,7 @@
 //
 //    http://www.apache.org/licenses/LICENSE-2.0
 //
-// Unless required by applicable law or agreed to in writing, softwis
+// Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
@@ -39,31 +39,41 @@ import (
 func NewStringSchema() *v3.SchemaOrReference {
 	return &v3.SchemaOrReference{
 		Oneof: &v3.SchemaOrReference_Schema{
-			Schema: &v3.Schema{Type: "string"}}}
+			Schema: &v3.Schema{Type: "string"},
+		},
+	}
 }
 
 func NewBooleanSchema() *v3.SchemaOrReference {
 	return &v3.SchemaOrReference{
 		Oneof: &v3.SchemaOrReference_Schema{
-			Schema: &v3.Schema{Type: "boolean"}}}
+			Schema: &v3.Schema{Type: "boolean"},
+		},
+	}
 }
 
 func NewBytesSchema() *v3.SchemaOrReference {
 	return &v3.SchemaOrReference{
 		Oneof: &v3.SchemaOrReference_Schema{
-			Schema: &v3.Schema{Type: "string", Format: "bytes"}}}
+			Schema: &v3.Schema{Type: "string", Format: "bytes"},
+		},
+	}
 }
 
 func NewIntegerSchema(format string) *v3.SchemaOrReference {
 	return &v3.SchemaOrReference{
 		Oneof: &v3.SchemaOrReference_Schema{
-			Schema: &v3.Schema{Type: "integer", Format: format}}}
+			Schema: &v3.Schema{Type: "integer", Format: format},
+		},
+	}
 }
 
 func NewNumberSchema(format string) *v3.SchemaOrReference {
 	return &v3.SchemaOrReference{
 		Oneof: &v3.SchemaOrReference_Schema{
-			Schema: &v3.Schema{Type: "number", Format: format}}}
+			Schema: &v3.Schema{Type: "number", Format: format},
+		},
+	}
 }
 
 func NewEnumSchema(enum_type *string, field protoreflect.FieldDescriptor) *v3.SchemaOrReference {
@@ -81,7 +91,9 @@ func NewEnumSchema(enum_type *string, field protoreflect.FieldDescriptor) *v3.Sc
 	}
 	return &v3.SchemaOrReference{
 		Oneof: &v3.SchemaOrReference_Schema{
-			Schema: schema}}
+			Schema: schema,
+		},
+	}
 }
 
 func NewListSchema(item_schema *v3.SchemaOrReference) *v3.SchemaOrReference {
@@ -100,14 +112,18 @@ func NewListSchema(item_schema *v3.SchemaOrReference) *v3.SchemaOrReference {
 func NewGoogleApiHttpBodySchema() *v3.SchemaOrReference {
 	return &v3.SchemaOrReference{
 		Oneof: &v3.SchemaOrReference_Schema{
-			Schema: &v3.Schema{Type: "string"}}}
+			Schema: &v3.Schema{Type: "string"},
+		},
+	}
 }
 
 // google.protobuf.Timestamp is serialized as a string
 func NewGoogleProtobufTimestampSchema() *v3.SchemaOrReference {
 	return &v3.SchemaOrReference{
 		Oneof: &v3.SchemaOrReference_Schema{
-			Schema: &v3.Schema{Type: "string", Format: "date-time"}}}
+			Schema: &v3.Schema{Type: "string", Format: "date-time"},
+		},
+	}
 }
 
 // google.protobuf.Duration is serialized as a string
@@ -158,28 +174,36 @@ func NewGoogleProtobufDurationSchema() *v3.SchemaOrReference {
 func NewGoogleTypeDateSchema() *v3.SchemaOrReference {
 	return &v3.SchemaOrReference{
 		Oneof: &v3.SchemaOrReference_Schema{
-			Schema: &v3.Schema{Type: "string", Format: "date"}}}
+			Schema: &v3.Schema{Type: "string", Format: "date"},
+		},
+	}
 }
 
 // google.type.DateTime is serialized as a string
 func NewGoogleTypeDateTimeSchema() *v3.SchemaOrReference {
 	return &v3.SchemaOrReference{
 		Oneof: &v3.SchemaOrReference_Schema{
-			Schema: &v3.Schema{Type: "string", Format: "date-time"}}}
+			Schema: &v3.Schema{Type: "string", Format: "date-time"},
+		},
+	}
 }
 
 // google.protobuf.FieldMask masks is serialized as a string
 func NewGoogleProtobufFieldMaskSchema() *v3.SchemaOrReference {
 	return &v3.SchemaOrReference{
 		Oneof: &v3.SchemaOrReference_Schema{
-			Schema: &v3.Schema{Type: "string", Format: "field-mask"}}}
+			Schema: &v3.Schema{Type: "string", Format: "field-mask"},
+		},
+	}
 }
 
 // google.protobuf.Struct is equivalent to a JSON object
 func NewGoogleProtobufStructSchema() *v3.SchemaOrReference {
 	return &v3.SchemaOrReference{
 		Oneof: &v3.SchemaOrReference_Schema{
-			Schema: &v3.Schema{Type: "object"}}}
+			Schema: &v3.Schema{Type: "object"},
+		},
+	}
 }
 
 // google.protobuf.Value is handled specially
@@ -242,7 +266,7 @@ func NewGoogleProtobufAnySchema(name string) *v3.NamedSchemaOrReference {
 }
 
 // google.rpc.Status is handled specially
-func NewGoogleRpcStatusSchema(name string, any_name string) *v3.NamedSchemaOrReference {
+func NewGoogleRpcStatusSchema(name, any_name string) *v3.NamedSchemaOrReference {
 	return &v3.NamedSchemaOrReference{
 		Name: name,
 		Value: &v3.SchemaOrReference{
@@ -308,7 +332,8 @@ func NewGoogleRpcStatusSchema(name string, any_name string) *v3.NamedSchemaOrRef
 func NewGoogleProtobufMapFieldEntrySchema(value_field_schema *v3.SchemaOrReference) *v3.SchemaOrReference {
 	return &v3.SchemaOrReference{
 		Oneof: &v3.SchemaOrReference_Schema{
-			Schema: &v3.Schema{Type: "object",
+			Schema: &v3.Schema{
+				Type: "object",
 				AdditionalProperties: &v3.AdditionalPropertiesItem{
 					Oneof: &v3.AdditionalPropertiesItem_SchemaOrReference{
 						SchemaOrReference: value_field_schema,

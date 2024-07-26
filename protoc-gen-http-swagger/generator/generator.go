@@ -33,13 +33,14 @@ package generator
 
 import (
 	"fmt"
-	"github.com/hertz-contrib/swagger-generate/protoc-gen-http-swagger/protobuf/api"
-	"github.com/hertz-contrib/swagger-generate/protoc-gen-http-swagger/protobuf/openapi"
-	"google.golang.org/protobuf/runtime/protoimpl"
 	"log"
 	"regexp"
 	"sort"
 	"strings"
+
+	"github.com/hertz-contrib/swagger-generate/protoc-gen-http-swagger/protobuf/api"
+	"github.com/hertz-contrib/swagger-generate/protoc-gen-http-swagger/protobuf/openapi"
+	"google.golang.org/protobuf/runtime/protoimpl"
 
 	"google.golang.org/genproto/googleapis/api/annotations"
 	status_pb "google.golang.org/genproto/googleapis/rpc/status"
@@ -67,8 +68,10 @@ const (
 // In order to dynamically add google.rpc.Status responses we need
 // to know the message descriptors for google.rpc.Status as well
 // as google.protobuf.Any.
-var statusProtoDesc = (&status_pb.Status{}).ProtoReflect().Descriptor()
-var anyProtoDesc = (&any_pb.Any{}).ProtoReflect().Descriptor()
+var (
+	statusProtoDesc = (&status_pb.Status{}).ProtoReflect().Descriptor()
+	anyProtoDesc    = (&any_pb.Any{}).ProtoReflect().Descriptor()
+)
 
 // OpenAPIGenerator holds internal state needed to generate an OpenAPIv3 document for a transcoded Protocol Buffer service.
 type OpenAPIGenerator struct {
@@ -255,7 +258,6 @@ func (g *OpenAPIGenerator) filterCommentString(c protogen.Comments) string {
 }
 
 func (g *OpenAPIGenerator) getSchemaByOption(inputMessage *protogen.Message, bodyType *protoimpl.ExtensionInfo) *openapi.Schema {
-
 	// Build an array holding the fields of the message.
 	definitionProperties := &openapi.Properties{
 		AdditionalProperties: make([]*openapi.NamedSchemaOrReference, 0),
@@ -345,7 +347,7 @@ func (g *OpenAPIGenerator) getSchemaByOption(inputMessage *protogen.Message, bod
 	schema := &openapi.Schema{
 		Type:       "object",
 		Properties: definitionProperties,
-		//Required:   required,
+		// Required:   required,
 	}
 
 	// Merge any `Schema` annotations with the current
@@ -367,8 +369,8 @@ func (g *OpenAPIGenerator) buildOperation(
 	defaultHost string,
 	path string,
 	inputMessage *protogen.Message,
-	outputMessage *protogen.Message) (*openapi.Operation, string) {
-
+	outputMessage *protogen.Message,
+) (*openapi.Operation, string) {
 	// Parameters array to hold all parameter objects
 	var parameters []*openapi.ParameterOrReference
 
@@ -403,7 +405,7 @@ func (g *OpenAPIGenerator) buildOperation(
 					proto.Merge(schema.Schema, extProperty.(*openapi.Schema))
 				}
 			}
-			//按照openapi规范，path参数如果有则一定是required
+			// 按照openapi规范，path参数如果有则一定是required
 			required = true
 		} else if ext = proto.GetExtension(field.Desc.Options(), api.E_Cookie); ext != "" {
 			paramName = proto.GetExtension(field.Desc.Options(), api.E_Cookie).(string)
@@ -501,7 +503,7 @@ func (g *OpenAPIGenerator) buildOperation(
 			RequestBody = &openapi.RequestBodyOrReference{
 				Oneof: &openapi.RequestBodyOrReference_RequestBody{
 					RequestBody: &openapi.RequestBody{
-						//Required: true,
+						// Required: true,
 						Content: &openapi.MediaTypes{
 							AdditionalProperties: additionalProperties,
 						},
@@ -568,7 +570,6 @@ func (g *OpenAPIGenerator) buildOperation(
 }
 
 func (g *OpenAPIGenerator) getResponseForMessage(d *openapi.Document, message *protogen.Message) (string, *openapi.HeadersOrReferences, *openapi.MediaTypes) {
-
 	headers := &openapi.HeadersOrReferences{AdditionalProperties: []*openapi.NamedHeaderOrReference{}}
 
 	for _, field := range message.Fields {
@@ -589,7 +590,7 @@ func (g *OpenAPIGenerator) getResponseForMessage(d *openapi.Document, message *p
 		}
 	}
 
-	//get api.body、api.raw_body option schema
+	// get api.body、api.raw_body option schema
 	bodySchema := g.getSchemaByOption(message, api.E_Body)
 	rawBodySchema := g.getSchemaByOption(message, api.E_RawBody)
 
@@ -641,7 +642,7 @@ func (g *OpenAPIGenerator) getResponseForMessage(d *openapi.Document, message *p
 }
 
 // addOperationToDocument adds an operation to the specified path/method.
-func (g *OpenAPIGenerator) addOperationToDocument(d *openapi.Document, op *openapi.Operation, path string, methodName string) {
+func (g *OpenAPIGenerator) addOperationToDocument(d *openapi.Document, op *openapi.Operation, path, methodName string) {
 	var selectedPathItem *openapi.NamedPathItem
 	for _, namedPathItem := range d.Paths.Path {
 		if namedPathItem.Name == path {

@@ -33,11 +33,12 @@ package main
 
 import (
 	"flag"
+	"path/filepath"
+	"strings"
+
 	"github.com/hertz-contrib/swagger-generate/protoc-gen-http-swagger/generator"
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/types/pluginpb"
-	"path/filepath"
-	"strings"
 )
 
 var flags flag.FlagSet

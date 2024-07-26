@@ -32,9 +32,10 @@
 package generator
 
 import (
-	"github.com/hertz-contrib/swagger-generate/protoc-gen-http-swagger/protobuf/openapi"
 	"log"
 	"strings"
+
+	"github.com/hertz-contrib/swagger-generate/protoc-gen-http-swagger/protobuf/openapi"
 
 	"google.golang.org/protobuf/reflect/protoreflect"
 
@@ -172,7 +173,9 @@ func (r *OpenAPIReflector) schemaOrReferenceForMessage(message protoreflect.Mess
 		ref := r.schemaReferenceForMessage(message)
 		return &openapi.SchemaOrReference{
 			Oneof: &openapi.SchemaOrReference_Reference{
-				Reference: &openapi.Reference{XRef: ref}}}
+				Reference: &openapi.Reference{XRef: ref},
+			},
+		}
 	}
 }
 
