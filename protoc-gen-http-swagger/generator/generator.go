@@ -43,7 +43,6 @@ import (
 	"google.golang.org/protobuf/runtime/protoimpl"
 
 	"google.golang.org/genproto/googleapis/api/annotations"
-	status_pb "google.golang.org/genproto/googleapis/rpc/status"
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/proto"
 	any_pb "google.golang.org/protobuf/types/known/anypb"
@@ -69,8 +68,7 @@ const (
 // to know the message descriptors for google.rpc.Status as well
 // as google.protobuf.Any.
 var (
-	statusProtoDesc = (&status_pb.Status{}).ProtoReflect().Descriptor()
-	anyProtoDesc    = (&any_pb.Any{}).ProtoReflect().Descriptor()
+	anyProtoDesc = (&any_pb.Any{}).ProtoReflect().Descriptor()
 )
 
 // OpenAPIGenerator holds internal state needed to generate an OpenAPIv3 document for a transcoded Protocol Buffer service.
