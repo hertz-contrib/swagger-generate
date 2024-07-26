@@ -1,3 +1,0 @@
-[submodule "hertz/protoc-gen-http-swagger"]
-	path = hertz/protoc-gen-http-swagger
-	url = https://github.com/EZ4Jam1n/protoc-gen-http-swagger.git
