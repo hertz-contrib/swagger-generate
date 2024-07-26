@@ -1,6 +1,6 @@
 module protoc-gen-http-swagger
 
-go 1.22.0
+go 1.22
 
 require (
 	github.com/google/gnostic-models v0.6.9-0.20230804172637-c7be7c783f49
