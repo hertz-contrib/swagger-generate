@@ -33,10 +33,10 @@ package main
 
 import (
 	"flag"
+	"github.com/hertz-contrib/swagger-generate/protoc-gen-http-swagger/generator"
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/types/pluginpb"
 	"path/filepath"
-	"protoc-gen-http-swagger/generator"
 	"strings"
 )
 

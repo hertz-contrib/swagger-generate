@@ -1,4 +1,4 @@
-module protoc-gen-http-swagger
+module github.com/hertz-contrib/swagger-generate/protoc-gen-http-swagger
 
 go 1.22
 

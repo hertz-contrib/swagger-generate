@@ -32,8 +32,8 @@
 package wellknown
 
 import (
+	v3 "github.com/hertz-contrib/swagger-generate/protoc-gen-http-swagger/protobuf/openapi"
 	"google.golang.org/protobuf/reflect/protoreflect"
-	v3 "protoc-gen-http-swagger/protobuf/openapi"
 )
 
 func NewStringSchema() *v3.SchemaOrReference {

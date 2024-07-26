@@ -33,10 +33,10 @@ package generator
 
 import (
 	"fmt"
+	"github.com/hertz-contrib/swagger-generate/protoc-gen-http-swagger/protobuf/api"
+	"github.com/hertz-contrib/swagger-generate/protoc-gen-http-swagger/protobuf/openapi"
 	"google.golang.org/protobuf/runtime/protoimpl"
 	"log"
-	"protoc-gen-http-swagger/protobuf/api"
-	"protoc-gen-http-swagger/protobuf/openapi"
 	"regexp"
 	"sort"
 	"strings"
@@ -47,7 +47,7 @@ import (
 	"google.golang.org/protobuf/proto"
 	any_pb "google.golang.org/protobuf/types/known/anypb"
 
-	wk "protoc-gen-http-swagger/generator/wellknown"
+	wk "github.com/hertz-contrib/swagger-generate/protoc-gen-http-swagger/generator/wellknown"
 )
 
 type Configuration struct {

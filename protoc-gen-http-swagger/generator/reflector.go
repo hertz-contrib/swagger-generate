@@ -32,13 +32,13 @@
 package generator
 
 import (
+	"github.com/hertz-contrib/swagger-generate/protoc-gen-http-swagger/protobuf/openapi"
 	"log"
-	"protoc-gen-http-swagger/protobuf/openapi"
 	"strings"
 
 	"google.golang.org/protobuf/reflect/protoreflect"
 
-	wk "protoc-gen-http-swagger/generator/wellknown"
+	wk "github.com/hertz-contrib/swagger-generate/protoc-gen-http-swagger/generator/wellknown"
 )
 
 const (

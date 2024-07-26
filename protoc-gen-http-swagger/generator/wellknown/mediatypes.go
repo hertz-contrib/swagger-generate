@@ -32,7 +32,7 @@
 package wellknown
 
 import (
-	v3 "protoc-gen-http-swagger/protobuf/openapi"
+	v3 "github.com/hertz-contrib/swagger-generate/protoc-gen-http-swagger/protobuf/openapi"
 )
 
 func NewGoogleApiHttpBodyMediaType() *v3.MediaTypes {
