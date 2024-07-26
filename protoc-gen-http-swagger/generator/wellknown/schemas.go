@@ -154,7 +154,7 @@ func NewGoogleProtobufDurationSchema() *v3.SchemaOrReference {
 			//
 			// This leads to the regex below limiting range from -315.576,000,000s to 315,576,000,000s
 			// allowing -0.999,999,999s to 0.999,999,999s in the floating precision range.
-			// That full range cannot be expressed precisly in float64 as demonstrated in
+			// That full range cannot be expressed precisely in float64 as demonstrated in
 			// the example at https://go.dev/play/p/XNtuhwdyu8Y for your reference.
 			// So the well known type google.protobuf.Duration needs a string.
 			//
