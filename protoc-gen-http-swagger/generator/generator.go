@@ -132,7 +132,11 @@ func (g *OpenAPIGenerator) buildDocument() *openapi.Document {
 			// Merge any `Document` annotations with the current
 			extDocument := proto.GetExtension(file.Desc.Options(), openapi.E_Document)
 			if extDocument != nil {
-				proto.Merge(d, extDocument.(*openapi.Document))
+				if doc, ok := extDocument.(*openapi.Document); ok {
+					proto.Merge(d, doc)
+				} else {
+					log.Printf("unexpected type for Document: %T", extDocument)
+				}
 			}
 			g.addPathsToDocument(d, file.Services)
 		}
@@ -264,9 +268,9 @@ func (g *OpenAPIGenerator) getSchemaByOption(inputMessage *protogen.Message, bod
 	extSchema := proto.GetExtension(inputMessage.Desc.Options(), openapi.E_Schema)
 	var allRequired []string
 	if extSchema != nil {
-		if extSchema.(*openapi.Schema) != nil {
-			if extSchema.(*openapi.Schema).Required != nil {
-				allRequired = extSchema.(*openapi.Schema).Required
+		if schema, ok := extSchema.(*openapi.Schema); ok {
+			if schema.Required != nil {
+				allRequired = schema.Required
 			}
 		}
 	}
@@ -345,7 +349,6 @@ func (g *OpenAPIGenerator) getSchemaByOption(inputMessage *protogen.Message, bod
 	schema := &openapi.Schema{
 		Type:       "object",
 		Properties: definitionProperties,
-		// Required:   required,
 	}
 
 	// Merge any `Schema` annotations with the current
@@ -388,7 +391,11 @@ func (g *OpenAPIGenerator) buildOperation(
 				// Merge any `Property` annotations with the current
 				extProperty := proto.GetExtension(field.Desc.Options(), openapi.E_Property)
 				if extProperty != nil {
-					proto.Merge(schema.Schema, extProperty.(*openapi.Schema))
+					if property, ok := extProperty.(*openapi.Schema); ok {
+						proto.Merge(schema.Schema, property)
+					} else {
+						log.Printf("unexpected type for Property: %T", extProperty)
+					}
 				}
 			}
 		} else if ext = proto.GetExtension(field.Desc.Options(), api.E_Path); ext != "" {
@@ -403,7 +410,7 @@ func (g *OpenAPIGenerator) buildOperation(
 					proto.Merge(schema.Schema, extProperty.(*openapi.Schema))
 				}
 			}
-			// 按照openapi规范，path参数如果有则一定是required
+			// According to the OpenAPI specification, if a path parameter exists, it must be required.
 			required = true
 		} else if ext = proto.GetExtension(field.Desc.Options(), api.E_Cookie); ext != "" {
 			paramName = proto.GetExtension(field.Desc.Options(), api.E_Cookie).(string)
@@ -438,7 +445,13 @@ func (g *OpenAPIGenerator) buildOperation(
 			Schema:      fieldSchema,
 		}
 		extParameter := proto.GetExtension(field.Desc.Options(), openapi.E_Parameter)
-		proto.Merge(parameter, extParameter.(*openapi.Parameter))
+		if extParameter != nil {
+			if parameterExt, ok := extParameter.(*openapi.Parameter); ok {
+				proto.Merge(parameter, parameterExt)
+			} else {
+				log.Printf("unexpected type for Parameter: %T", extParameter)
+			}
+		}
 
 		// Append the parameter to the parameters array if it was set
 		if paramName != "" && paramIn != "" {
