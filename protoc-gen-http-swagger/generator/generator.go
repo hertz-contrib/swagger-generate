@@ -514,7 +514,7 @@ func (g *OpenAPIGenerator) buildOperation(
 			RequestBody = &openapi.RequestBodyOrReference{
 				Oneof: &openapi.RequestBodyOrReference_RequestBody{
 					RequestBody: &openapi.RequestBody{
-						// Required: true,
+						Description: g.filterCommentString(inputMessage.Comments.Leading),
 						Content: &openapi.MediaTypes{
 							AdditionalProperties: additionalProperties,
 						},
@@ -629,7 +629,7 @@ func (g *OpenAPIGenerator) getResponseForMessage(d *openapi.Document, message *p
 	if len(rawBodySchema.Properties.AdditionalProperties) > 0 {
 		refSchema := &openapi.NamedSchemaOrReference{
 			Name:  g.reflect.formatMessageName(message.Desc),
-			Value: &openapi.SchemaOrReference{Oneof: &openapi.SchemaOrReference_Schema{Schema: bodySchema}},
+			Value: &openapi.SchemaOrReference{Oneof: &openapi.SchemaOrReference_Schema{Schema: rawBodySchema}},
 		}
 		ref := "#/components/schemas/" + g.reflect.formatMessageName(message.Desc)
 		g.addSchemaToDocument(d, refSchema)
