@@ -209,10 +209,16 @@ func (g *OpenAPIGenerator) getDocumentOption(obj interface{}) error {
 	serviceOrStruct, name := g.getDocumentAnnotationInWhichServiceOrStruct()
 	if serviceOrStruct == "service" {
 		serviceDesc := g.fileDesc.GetServiceDescriptor(name)
-		utils.ParseServiceOption(serviceDesc, OpenapiDocument, obj)
+		err := utils.ParseServiceOption(serviceDesc, OpenapiDocument, obj)
+		if err != nil {
+			return err
+		}
 	} else if serviceOrStruct == "struct" {
 		structDesc := g.fileDesc.GetStructDescriptor(name)
-		utils.ParseStructOption(structDesc, OpenapiDocument, obj)
+		err := utils.ParseStructOption(structDesc, OpenapiDocument, obj)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -254,10 +260,12 @@ func (g *OpenAPIGenerator) addPathsToDocument(d *openapi.Document, services []*p
 					}
 
 					op, path2 := g.buildOperation(d, methodName, comment, operationID, s.GetName(), path[0], host, inputDesc, outputDesc)
-					var methodDesc *thrift_reflection.MethodDescriptor
-					methodDesc = g.fileDesc.GetMethodDescriptor(s.GetName(), f.GetName())
+					methodDesc := g.fileDesc.GetMethodDescriptor(s.GetName(), f.GetName())
 					newOp := &openapi.Operation{}
-					utils.ParseMethodOption(methodDesc, OpenapiOperation, &newOp)
+					err := utils.ParseMethodOption(methodDesc, OpenapiOperation, &newOp)
+					if err != nil {
+						logs.Errorf("Error parsing method option: %s", err)
+					}
 					utils.MergeStructs(op, newOp)
 					g.addOperationToDocument(d, op, path2, methodName)
 				}
@@ -299,7 +307,10 @@ func (g *OpenAPIGenerator) buildOperation(
 				extPropertyOrNil := v.Annotations[OpenapiProperty]
 				if len(extPropertyOrNil) > 0 {
 					newFieldSchema := &openapi.Schema{}
-					utils.ParseFieldOption(v, OpenapiProperty, &newFieldSchema)
+					err := utils.ParseFieldOption(v, OpenapiProperty, &newFieldSchema)
+					if err != nil {
+						logs.Errorf("Error parsing field option: %s", err)
+					}
 					utils.MergeStructs(fieldSchema.Schema, newFieldSchema)
 				}
 			}
@@ -314,7 +325,10 @@ func (g *OpenAPIGenerator) buildOperation(
 				extPropertyOrNil := v.Annotations[OpenapiProperty]
 				if len(extPropertyOrNil) > 0 {
 					newFieldSchema := &openapi.Schema{}
-					utils.ParseFieldOption(v, OpenapiProperty, &newFieldSchema)
+					err := utils.ParseFieldOption(v, OpenapiProperty, &newFieldSchema)
+					if err != nil {
+						logs.Errorf("Error parsing field option: %s", err)
+					}
 					utils.MergeStructs(fieldSchema.Schema, newFieldSchema)
 				}
 				required = true
@@ -330,7 +344,10 @@ func (g *OpenAPIGenerator) buildOperation(
 				extPropertyOrNil := v.Annotations[OpenapiProperty]
 				if len(extPropertyOrNil) > 0 {
 					newFieldSchema := &openapi.Schema{}
-					utils.ParseFieldOption(v, OpenapiProperty, &newFieldSchema)
+					err := utils.ParseFieldOption(v, OpenapiProperty, &newFieldSchema)
+					if err != nil {
+						logs.Errorf("Error parsing field option: %s", err)
+					}
 					utils.MergeStructs(fieldSchema.Schema, newFieldSchema)
 				}
 			}
@@ -345,7 +362,10 @@ func (g *OpenAPIGenerator) buildOperation(
 				extPropertyOrNil := v.Annotations[OpenapiProperty]
 				if len(extPropertyOrNil) > 0 {
 					newFieldSchema := &openapi.Schema{}
-					utils.ParseFieldOption(v, OpenapiProperty, &newFieldSchema)
+					err := utils.ParseFieldOption(v, OpenapiProperty, &newFieldSchema)
+					if err != nil {
+						logs.Errorf("Error parsing field option: %s", err)
+					}
 					utils.MergeStructs(fieldSchema.Schema, newFieldSchema)
 				}
 			}
@@ -360,7 +380,10 @@ func (g *OpenAPIGenerator) buildOperation(
 		}
 
 		var extParameter *openapi.Parameter
-		utils.ParseFieldOption(v, OpenapiParameter, &extParameter)
+		err := utils.ParseFieldOption(v, OpenapiParameter, &extParameter)
+		if err != nil {
+			logs.Errorf("Error parsing field option: %s", err)
+		}
 		utils.MergeStructs(parameter, extParameter)
 
 		// Append the parameter to the parameters array if it was set
@@ -577,7 +600,10 @@ func (g *OpenAPIGenerator) getSchemaByOption(inputDesc *thrift_reflection.Struct
 
 	var allRequired []string
 	var extSchema *openapi.Schema
-	utils.ParseStructOption(inputDesc, OpenapiSchema, &extSchema)
+	err := utils.ParseStructOption(inputDesc, OpenapiSchema, &extSchema)
+	if err != nil {
+		logs.Errorf("Error parsing struct option: %s", err)
+	}
 	if extSchema != nil {
 		if extSchema.Required != nil {
 			allRequired = extSchema.Required
@@ -606,7 +632,10 @@ func (g *OpenAPIGenerator) getSchemaByOption(inputDesc *thrift_reflection.Struct
 			if fieldSchema.IsSetSchema() {
 				fieldSchema.Schema.Description = description
 				newFieldSchema := &openapi.Schema{}
-				utils.ParseFieldOption(field, OpenapiProperty, &newFieldSchema)
+				err := utils.ParseFieldOption(field, OpenapiProperty, &newFieldSchema)
+				if err != nil {
+					logs.Errorf("Error parsing field option: %s", err)
+				}
 				utils.MergeStructs(fieldSchema.Schema, newFieldSchema)
 			}
 
@@ -706,7 +735,10 @@ func (g *OpenAPIGenerator) addSchemasForStructsToDocument(d *openapi.Document, s
 			if fieldSchema.IsSetSchema() {
 				fieldSchema.Schema.Description = description
 				newFieldSchema := &openapi.Schema{}
-				utils.ParseFieldOption(field, OpenapiProperty, &newFieldSchema)
+				err := utils.ParseFieldOption(field, OpenapiProperty, &newFieldSchema)
+				if err != nil {
+					logs.Errorf("Error parsing field option: %s", err)
+				}
 				utils.MergeStructs(fieldSchema.Schema, newFieldSchema)
 			}
 
@@ -734,7 +766,10 @@ func (g *OpenAPIGenerator) addSchemasForStructsToDocument(d *openapi.Document, s
 		}
 
 		var extSchema *openapi.Schema
-		utils.ParseStructOption(structDesc, OpenapiSchema, &extSchema)
+		err := utils.ParseStructOption(structDesc, OpenapiSchema, &extSchema)
+		if err != nil {
+			logs.Errorf("Error parsing struct option: %s", err)
+		}
 		if extSchema != nil {
 			utils.MergeStructs(schema, extSchema)
 		}

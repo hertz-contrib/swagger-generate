@@ -47,7 +47,13 @@ func ParseStructOption(descriptor *thrift_reflection.StructDescriptor, optionNam
 	mapVal := opt.GetValue()
 	mapValMap := mapVal.(map[string]interface{})
 	jsonData, err := json.Marshal(mapValMap)
+	if err != nil {
+		return err
+	}
 	err = json.Unmarshal(jsonData, obj)
+	if err != nil {
+		return err
+	}
 	return err
 }
 
@@ -59,7 +65,13 @@ func ParseServiceOption(descriptor *thrift_reflection.ServiceDescriptor, optionN
 	mapVal := opt.GetValue()
 	mapValMap := mapVal.(map[string]interface{})
 	jsonData, err := json.Marshal(mapValMap)
+	if err != nil {
+		return err
+	}
 	err = json.Unmarshal(jsonData, obj)
+	if err != nil {
+		return err
+	}
 	return err
 }
 
@@ -71,7 +83,13 @@ func ParseMethodOption(descriptor *thrift_reflection.MethodDescriptor, optionNam
 	mapVal := opt.GetValue()
 	mapValMap := mapVal.(map[string]interface{})
 	jsonData, err := json.Marshal(mapValMap)
+	if err != nil {
+		return err
+	}
 	err = json.Unmarshal(jsonData, obj)
+	if err != nil {
+		return err
+	}
 	return err
 }
 
@@ -83,7 +101,13 @@ func ParseFieldOption(descriptor *thrift_reflection.FieldDescriptor, optionName 
 	mapVal := opt.GetValue()
 	mapValMap := mapVal.(map[string]interface{})
 	jsonData, err := json.Marshal(mapValMap)
+	if err != nil {
+		return err
+	}
 	err = json.Unmarshal(jsonData, obj)
+	if err != nil {
+		return err
+	}
 	return err
 }
 

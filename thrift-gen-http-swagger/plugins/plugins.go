@@ -17,7 +17,6 @@
 package plugins
 
 import (
-	"flag"
 	"fmt"
 	"io"
 	"log"
@@ -27,8 +26,6 @@ import (
 	"github.com/hertz-contrib/swagger-generate/thrift-gen-http-swagger/args"
 	"github.com/hertz-contrib/swagger-generate/thrift-gen-http-swagger/generator"
 )
-
-var flags flag.FlagSet
 
 func Run() int {
 	data, err := io.ReadAll(os.Stdin)
