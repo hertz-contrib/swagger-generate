@@ -38,16 +38,14 @@ import (
 	"sort"
 	"strings"
 
+	wk "github.com/hertz-contrib/swagger-generate/protoc-gen-http-swagger/generator/wellknown"
 	"github.com/hertz-contrib/swagger-generate/protoc-gen-http-swagger/protobuf/api"
 	"github.com/hertz-contrib/swagger-generate/protoc-gen-http-swagger/protobuf/openapi"
-	"google.golang.org/protobuf/runtime/protoimpl"
-
 	"google.golang.org/genproto/googleapis/api/annotations"
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/runtime/protoimpl"
 	any_pb "google.golang.org/protobuf/types/known/anypb"
-
-	wk "github.com/hertz-contrib/swagger-generate/protoc-gen-http-swagger/generator/wellknown"
 )
 
 type Configuration struct {
@@ -268,8 +266,8 @@ func (g *OpenAPIGenerator) getSchemaByOption(inputMessage *protogen.Message, bod
 	extSchema := proto.GetExtension(inputMessage.Desc.Options(), openapi.E_Schema)
 	var allRequired []string
 	if extSchema != nil {
-		if schema, ok := extSchema.(*openapi.Schema); ok {
-			if schema.Required != nil {
+		if schema, ok := extSchema.(*openapi.Schema); ok && schema != nil {
+			if len(schema.Required) != 0 {
 				allRequired = schema.Required
 			}
 		}

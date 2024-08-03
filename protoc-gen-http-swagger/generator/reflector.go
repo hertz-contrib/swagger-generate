@@ -35,11 +35,9 @@ import (
 	"log"
 	"strings"
 
-	"github.com/hertz-contrib/swagger-generate/protoc-gen-http-swagger/protobuf/openapi"
-
-	"google.golang.org/protobuf/reflect/protoreflect"
-
 	wk "github.com/hertz-contrib/swagger-generate/protoc-gen-http-swagger/generator/wellknown"
+	"github.com/hertz-contrib/swagger-generate/protoc-gen-http-swagger/protobuf/openapi"
+	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
 const (
