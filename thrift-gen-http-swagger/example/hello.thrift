@@ -46,10 +46,17 @@ struct QueryReq {
             max_length: 50
         }'
     )
-    6: list<string> items (
+    2: list<string> items (
         api.query = "items"
     )
-    7: map<string, string> strings_map (
+
+    /*
+    * 对于paramters中的map类型调试时需要转义才能解析，如下所示
+    * {
+    *   "query1":  "{\"key\":\"value\"}"
+    * }
+    */
+    3: map<string, string> strings_map (
         api.query = "query1"
     )
 }

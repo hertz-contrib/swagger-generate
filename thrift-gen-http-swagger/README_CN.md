@@ -68,8 +68,8 @@
 |---------------------|---------|--------------------------------------------|
 | `openapi.operation` | Method  | 用于补充 `pathItem` 的 `operation`              |
 | `openapi.property`  | Field   | 用于补充 `schema` 的 `property`                 |
-| `openapi.schema`    | Message | 用于补充 `requestBody` 和 `response` 的 `schema` |
-| `openapi.document`  | 文档      | 用于补充 swagger 文档                            |
+| `openapi.schema`    | Struct  | 用于补充 `requestBody` 和 `response` 的 `schema` |
+| `openapi.document`  | Service | 用于补充 swagger 文档，任意service中添加该注解即可          |
 | `openapi.parameter` | Field   | 用于补充 `parameter`                           |
 
 更多的使用方法请参考 [示例](example/hello.thrift)
@@ -89,6 +89,14 @@ go install github.com/hertz-contrib/swagger-generate/thrift-gen-http-swagger@lat
 
 # 验证安装
 thrift-gen-http-swagger --version
+```
+
+## 使用
+
+```sh
+
+thriftgo -g go -p http-swagger:OutputDir={swagger文档输出目录} {idl}.thrift
+
 ```
 
 ## 更多信息

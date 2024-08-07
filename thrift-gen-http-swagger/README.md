@@ -64,13 +64,13 @@ HTTP Swagger document generation plugin for cloudwego/cwgo & hertz.
 
 ## openapi Annotations
 
-| Annotation          | Component | Explanation                                                     |  
-|---------------------|-----------|-----------------------------------------------------------------|
-| `openapi.operation` | Method    | Used to supplement the `operation` of `pathItem`                |
-| `openapi.property`  | Field     | Used to supplement the `property` of `schema`                   |
-| `openapi.schema`    | Message   | Used to supplement the `schema` of `requestBody` and `response` |
-| `openapi.document`  | Document  | Used to supplement the Swagger document                         |
-| `openapi.parameter` | Field     | Used to supplement the `parameter`                              |
+| Annotation          | Component | Explanation                                                                        |  
+|---------------------|-----------|------------------------------------------------------------------------------------|
+| `openapi.operation` | Method    | Used to supplement the `operation` of `pathItem`                                   |
+| `openapi.property`  | Field     | Used to supplement the `property` of `schema`                                      |
+| `openapi.schema`    | Struct    | Used to supplement the `schema` of `requestBody` and `response`                    |
+| `openapi.document`  | Service   | Used to supplement the Swagger document, simply add this annotation in any service |
+| `openapi.parameter` | Field     | Used to supplement the `parameter`                                                 |
 
 For more usage, please refer to [Example](example/hello.thrift).
 
@@ -88,6 +88,14 @@ go install github.com/hertz-contrib/swagger-generate/thrift-gen-http-swagger@lat
 
 # Verify the installation
 thrift-gen-http-swagger --version
+```
+
+## Usage
+
+```sh
+
+thriftgo -g go -p http-swagger:OutputDir={swagger documentation output directory} {idl}.thrift
+
 ```
 
 ## More info

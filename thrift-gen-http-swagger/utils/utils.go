@@ -41,6 +41,9 @@ func Contains(s []string, e string) bool {
 
 func ParseStructOption(descriptor *thrift_reflection.StructDescriptor, optionName string, obj interface{}) error {
 	opt, err := thrift_option.ParseStructOption(descriptor, optionName)
+	if errors.Is(err, thrift_option.ErrKeyNotMatch) {
+		return nil
+	}
 	if err != nil {
 		return err
 	}
@@ -50,8 +53,7 @@ func ParseStructOption(descriptor *thrift_reflection.StructDescriptor, optionNam
 	if err != nil {
 		return err
 	}
-	err = json.Unmarshal(jsonData, obj)
-	if err != nil {
+	if err = json.Unmarshal(jsonData, obj); err != nil {
 		return err
 	}
 	return err
@@ -59,6 +61,9 @@ func ParseStructOption(descriptor *thrift_reflection.StructDescriptor, optionNam
 
 func ParseServiceOption(descriptor *thrift_reflection.ServiceDescriptor, optionName string, obj interface{}) error {
 	opt, err := thrift_option.ParseServiceOption(descriptor, optionName)
+	if errors.Is(err, thrift_option.ErrKeyNotMatch) {
+		return nil
+	}
 	if err != nil {
 		return err
 	}
@@ -68,8 +73,7 @@ func ParseServiceOption(descriptor *thrift_reflection.ServiceDescriptor, optionN
 	if err != nil {
 		return err
 	}
-	err = json.Unmarshal(jsonData, obj)
-	if err != nil {
+	if err = json.Unmarshal(jsonData, obj); err != nil {
 		return err
 	}
 	return err
@@ -77,6 +81,9 @@ func ParseServiceOption(descriptor *thrift_reflection.ServiceDescriptor, optionN
 
 func ParseMethodOption(descriptor *thrift_reflection.MethodDescriptor, optionName string, obj interface{}) error {
 	opt, err := thrift_option.ParseMethodOption(descriptor, optionName)
+	if errors.Is(err, thrift_option.ErrKeyNotMatch) {
+		return nil
+	}
 	if err != nil {
 		return err
 	}
@@ -86,8 +93,7 @@ func ParseMethodOption(descriptor *thrift_reflection.MethodDescriptor, optionNam
 	if err != nil {
 		return err
 	}
-	err = json.Unmarshal(jsonData, obj)
-	if err != nil {
+	if err = json.Unmarshal(jsonData, obj); err != nil {
 		return err
 	}
 	return err
@@ -95,6 +101,9 @@ func ParseMethodOption(descriptor *thrift_reflection.MethodDescriptor, optionNam
 
 func ParseFieldOption(descriptor *thrift_reflection.FieldDescriptor, optionName string, obj interface{}) error {
 	opt, err := thrift_option.ParseFieldOption(descriptor, optionName)
+	if errors.Is(err, thrift_option.ErrKeyNotMatch) {
+		return nil
+	}
 	if err != nil {
 		return err
 	}
@@ -104,8 +113,7 @@ func ParseFieldOption(descriptor *thrift_reflection.FieldDescriptor, optionName 
 	if err != nil {
 		return err
 	}
-	err = json.Unmarshal(jsonData, obj)
-	if err != nil {
+	if err = json.Unmarshal(jsonData, obj); err != nil {
 		return err
 	}
 	return err

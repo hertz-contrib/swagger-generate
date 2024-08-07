@@ -694,20 +694,37 @@ func (g *OpenAPIGenerator) filterCommentString(str string) string {
 	matches := g.commentPattern.FindAllStringSubmatch(str, -1)
 
 	for _, match := range matches {
-		var comment string
 		if match[1] != "" {
-			// One-line comment
-			comment = strings.TrimSpace(match[1])
+			// Handle one-line comments
+			comments = append(comments, strings.TrimSpace(match[1]))
 		} else if match[2] != "" {
-			// Multiline comment
+			// Handle multiline comments
 			multiLineComment := match[2]
 			lines := strings.Split(multiLineComment, "\n")
-			for i, line := range lines {
-				lines[i] = strings.TrimSpace(strings.TrimPrefix(strings.TrimSpace(line), "*"))
+
+			// Find the minimum indentation level (excluding empty lines)
+			minIndent := -1
+			for _, line := range lines {
+				trimmedLine := strings.TrimSpace(line)
+				if trimmedLine != "" {
+					lineIndent := len(line) - len(strings.TrimLeft(line, " "))
+					if minIndent == -1 || lineIndent < minIndent {
+						minIndent = lineIndent
+					}
+				}
 			}
-			comment = strings.Join(lines, "\n")
+
+			// Remove the minimum indentation and any leading '*' from each line
+			for i, line := range lines {
+				if minIndent > 0 && len(line) >= minIndent {
+					line = line[minIndent:]
+				}
+				lines[i] = strings.TrimPrefix(line, "*")
+			}
+
+			// Remove leading and trailing empty lines from the comment block
+			comments = append(comments, strings.TrimSpace(strings.Join(lines, "\n")))
 		}
-		comments = append(comments, comment)
 	}
 
 	return strings.Join(comments, "\n")
