@@ -51,7 +51,7 @@ struct QueryReq {
     )
 
     /*
-    * 对于paramters中的map类型调试时需要转义才能解析，如下所示
+    * 对于parameters中的map类型调试时需要转义才能解析，如下所示
     * {
     *   "query1":  "{\"key\":\"value\"}"
     * }
