@@ -571,10 +571,10 @@ func (g *OpenAPIGenerator) getResponseForStruct(d *openapi.Document, desc *thrif
 
 	if len(bodySchema.Properties.AdditionalProperties) > 0 {
 		refSchema := &openapi.NamedSchemaOrReference{
-			Name:  desc.GetName(),
+			Name:  desc.GetName() + "Body",
 			Value: &openapi.SchemaOrReference{Schema: bodySchema},
 		}
-		ref := "#/components/schemas/" + desc.GetName()
+		ref := "#/components/schemas/" + desc.GetName() + "Body"
 		g.addSchemaToDocument(d, refSchema)
 		additionalProperties = append(additionalProperties, &openapi.NamedMediaType{
 			Name: "application/json",
@@ -588,10 +588,10 @@ func (g *OpenAPIGenerator) getResponseForStruct(d *openapi.Document, desc *thrif
 
 	if len(rawBodySchema.Properties.AdditionalProperties) > 0 {
 		refSchema := &openapi.NamedSchemaOrReference{
-			Name:  desc.GetName(),
+			Name:  desc.GetName() + "RawBody",
 			Value: &openapi.SchemaOrReference{Schema: rawBodySchema},
 		}
-		ref := "#/components/schemas/" + desc.GetName()
+		ref := "#/components/schemas/" + desc.GetName() + "RawBody"
 		g.addSchemaToDocument(d, refSchema)
 		additionalProperties = append(additionalProperties, &openapi.NamedMediaType{
 			Name: "application/octet-stream",
