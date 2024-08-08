@@ -609,10 +609,10 @@ func (g *OpenAPIGenerator) getResponseForMessage(d *openapi.Document, message *p
 
 	if len(bodySchema.Properties.AdditionalProperties) > 0 {
 		refSchema := &openapi.NamedSchemaOrReference{
-			Name:  g.reflect.formatMessageName(message.Desc),
+			Name:  g.reflect.formatMessageName(message.Desc) + "Body",
 			Value: &openapi.SchemaOrReference{Oneof: &openapi.SchemaOrReference_Schema{Schema: bodySchema}},
 		}
-		ref := "#/components/schemas/" + g.reflect.formatMessageName(message.Desc)
+		ref := "#/components/schemas/" + g.reflect.formatMessageName(message.Desc) + "Body"
 		g.addSchemaToDocument(d, refSchema)
 		additionalProperties = append(additionalProperties, &openapi.NamedMediaType{
 			Name: "application/json",
@@ -628,10 +628,10 @@ func (g *OpenAPIGenerator) getResponseForMessage(d *openapi.Document, message *p
 
 	if len(rawBodySchema.Properties.AdditionalProperties) > 0 {
 		refSchema := &openapi.NamedSchemaOrReference{
-			Name:  g.reflect.formatMessageName(message.Desc),
+			Name:  g.reflect.formatMessageName(message.Desc) + "RawBody",
 			Value: &openapi.SchemaOrReference{Oneof: &openapi.SchemaOrReference_Schema{Schema: rawBodySchema}},
 		}
-		ref := "#/components/schemas/" + g.reflect.formatMessageName(message.Desc)
+		ref := "#/components/schemas/" + g.reflect.formatMessageName(message.Desc) + "RawBody"
 		g.addSchemaToDocument(d, refSchema)
 		additionalProperties = append(additionalProperties, &openapi.NamedMediaType{
 			Name: "application/octet-stream",
