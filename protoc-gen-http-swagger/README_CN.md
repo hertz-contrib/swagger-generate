@@ -2,7 +2,7 @@
 
 [English](README.md) | 中文
 
-适用于 cloudwego/cwgo & hertz 的 http swagger 文档生成插件。
+适用于 [cloudwego/cwgo](https://github.com/cloudwego/cwgo) & [hertz](https://github.com/cloudwego/hertz) 的 http swagger 文档生成插件。
 
 ## 支持的 hz 注解
 
@@ -14,15 +14,15 @@
 
 #### 注解说明
 
-| 注解             | 说明                                                                       |  
-|----------------|--------------------------------------------------------------------------|
-| `api.query`    | `api.query` 对应 `parameter` 中 `in: query` 参数                              |  
-| `api.path`     | `api.path` 对应 `parameter` 中 `in: path` 参数, `required` 为 `true`           |
-| `api.header`   | `api.header` 对应 `parameter` 中 `in: header` 参数                            |       
-| `api.cookie`   | `api.cookie` 对应 `parameter` 中 `in: cookie` 参数                            |
-| `api.body`     | `api.body` 对应 `requestBody` 中 `content` 为 `application/json`             | 
-| `api.form`     | `api.form` 对应 `requestBody` 中 `content` 为 `multipart/form-data`          | 
-| `api.raw_body` | `api.raw_body` 对应 `requestBody` 中 `content` 为 `application/octet-stream` |
+| 注解             | 说明                                                                                                    |  
+|----------------|-------------------------------------------------------------------------------------------------------|
+| `api.query`    | `api.query` 对应 `parameter` 中 `in: query` 参数                                                           |  
+| `api.path`     | `api.path` 对应 `parameter` 中 `in: path` 参数, `required` 为 `true`                                        |
+| `api.header`   | `api.header` 对应 `parameter` 中 `in: header` 参数                                                         |       
+| `api.cookie`   | `api.cookie` 对应 `parameter` 中 `in: cookie` 参数                                                         |
+| `api.body`     | `api.body` 对应 `requestBody` 中 `content` 为 `application/json`                                          | 
+| `api.form`     | `api.form` 对应 `requestBody` 中 `content` 为 `multipart/form-data` 或 `application/x-www-form-urlencoded` | 
+| `api.raw_body` | `api.raw_body` 对应 `requestBody` 中 `content` 为 `text/plain`                                            |
 
 ### Response 规范
 
@@ -31,11 +31,11 @@
 
 #### 注解说明
 
-| 注解             | 说明                                                                    |  
-|----------------|-----------------------------------------------------------------------|
-| `api.header`   | `api.header` 对应 `response` 中 `header`                                 |
-| `api.body`     | `api.body` 对应 `response` 中 `content` 为 `application/json`             |
-| `api.raw_body` | `api.raw_body` 对应 `response` 中 `content` 为 `application/octet-stream` |
+| 注解             | 说明                                                        |  
+|----------------|-----------------------------------------------------------|
+| `api.header`   | `api.header` 对应 `response` 中 `header`                     |
+| `api.body`     | `api.body` 对应 `response` 中 `content` 为 `application/json` |
+| `api.raw_body` | `api.raw_body` 对应 `response` 中 `content` 为 `text/plain`   |
 
 ### Method 规范
 
@@ -43,16 +43,16 @@
 
 #### 注解说明
 
-| 注解            | 说明                                             |  
-|---------------|------------------------------------------------|
-| `api.get`     | `api.get` 对应 `GET` 请求，只有 `parameter`           |
-| `api.put`     | `api.put` 对应 `PUT` 请求                          |
-| `api.post`    | `api.post` 对应 `POST` 请求                        |
-| `api.patch`   | `api.patch` 对应 `PATCH` 请求                      |
-| `api.delete`  | `api.delete` 对应 `DELETE` 请求，只有 `parameter`     |
-| `api.options` | `api.options` 对应 `OPTIONS` 请求                  |
-| `api.head`    | `api.head` 对应 `HEAD` 请求，只有 `parameter`         |
-| `api.baseurl` | `api.baseurl` 对应 `pathItem` 的 `server` 的 `url` |
+| 注解            | 说明                                                      |  
+|---------------|---------------------------------------------------------|
+| `api.get`     | `api.get` 对应 `GET` 请求，只有 `parameter`                    |
+| `api.put`     | `api.put` 对应 `PUT` 请求                                   |
+| `api.post`    | `api.post` 对应 `POST` 请求                                 |
+| `api.patch`   | `api.patch` 对应 `PATCH` 请求                               |
+| `api.delete`  | `api.delete` 对应 `DELETE` 请求，只有 `parameter`              |
+| `api.options` | `api.options` 对应 `OPTIONS` 请求                           |
+| `api.head`    | `api.head` 对应 `HEAD` 请求，只有 `parameter`                  |
+| `api.baseurl` | `api.baseurl` 对应 `pathItem` 的 `server` 的 `url`, 非hz支持注解 |
 
 ### Service 规范
 
@@ -89,6 +89,12 @@ go install github.com/hertz-contrib/swagger-generate/protoc-gen-http-swagger@lat
 
 # 验证安装
 protoc-gen-http-swagger --version
+```
+
+## 使用
+
+```sh
+protoc --http-swagger_out=doc -I idl hello.proto
 ```
 
 ## 更多信息

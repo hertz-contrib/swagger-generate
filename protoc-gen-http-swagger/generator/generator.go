@@ -495,11 +495,22 @@ func (g *OpenAPIGenerator) buildOperation(
 					},
 				},
 			})
+
+			additionalProperties = append(additionalProperties, &openapi.NamedMediaType{
+				Name: "application/x-www-form-urlencoded",
+				Value: &openapi.MediaType{
+					Schema: &openapi.SchemaOrReference{
+						Oneof: &openapi.SchemaOrReference_Schema{
+							Schema: formSchema,
+						},
+					},
+				},
+			})
 		}
 
 		if len(rawBodySchema.Properties.AdditionalProperties) > 0 {
 			additionalProperties = append(additionalProperties, &openapi.NamedMediaType{
-				Name: "application/octet-stream",
+				Name: "text/plain",
 				Value: &openapi.MediaType{
 					Schema: &openapi.SchemaOrReference{
 						Oneof: &openapi.SchemaOrReference_Schema{
@@ -634,7 +645,7 @@ func (g *OpenAPIGenerator) getResponseForMessage(d *openapi.Document, message *p
 		ref := "#/components/schemas/" + g.reflect.formatMessageName(message.Desc) + "RawBody"
 		g.addSchemaToDocument(d, refSchema)
 		additionalProperties = append(additionalProperties, &openapi.NamedMediaType{
-			Name: "application/octet-stream",
+			Name: "text/plain",
 			Value: &openapi.MediaType{
 				Schema: &openapi.SchemaOrReference{
 					Oneof: &openapi.SchemaOrReference_Reference{

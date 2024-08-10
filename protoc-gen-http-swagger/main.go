@@ -47,7 +47,7 @@ var flags flag.FlagSet
 
 func main() {
 	conf := generator.Configuration{
-		Version:        flags.String("version", "0.0.1", "version number text, e.g. 1.2.3"),
+		Version:        flags.String("version", "3.0.3", "version number text, e.g. 1.2.3"),
 		Title:          flags.String("title", "", "name of the API"),
 		Description:    flags.String("description", "", "description of the API"),
 		Naming:         flags.String("naming", "json", `naming convention. Use "proto" for passing names directly from the proto files`),

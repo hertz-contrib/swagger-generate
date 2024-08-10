@@ -2,7 +2,7 @@
 
 English | [中文](README_CN.md)
 
-HTTP Swagger document generation plugin for cloudwego/cwgo & hertz.
+HTTP Swagger document generation plugin for [cloudwego/cwgo](https://github.com/cloudwego/cwgo) & [hertz](https://github.com/cloudwego/hertz).
 
 ## Supported hz Annotations
 
@@ -14,15 +14,15 @@ HTTP Swagger document generation plugin for cloudwego/cwgo & hertz.
 
 #### Annotation Explanation
 
-| Annotation     | Explanation                                                                            |  
-|----------------|----------------------------------------------------------------------------------------|
-| `api.query`    | `api.query` corresponds to `parameter` with `in: query`                                |  
-| `api.path`     | `api.path` corresponds to `parameter` with `in: path`, required is true                |
-| `api.header`   | `api.header` corresponds to `parameter` with `in: header`                              |       
-| `api.cookie`   | `api.cookie` corresponds to `parameter` with `in: cookie`                              |
-| `api.body`     | `api.body` corresponds to `requestBody` with `content`: `application/json`             | 
-| `api.form`     | `api.form` corresponds to `requestBody` with `content`: `multipart/form-data`          | 
-| `api.raw_body` | `api.raw_body` corresponds to `requestBody` with `content`: `application/octet-stream` | 
+| Annotation     | Explanation                                                                                                          |  
+|----------------|----------------------------------------------------------------------------------------------------------------------|
+| `api.query`    | `api.query` corresponds to `parameter` with `in: query`                                                              |  
+| `api.path`     | `api.path` corresponds to `parameter` with `in: path`, required is true                                              |
+| `api.header`   | `api.header` corresponds to `parameter` with `in: header`                                                            |       
+| `api.cookie`   | `api.cookie` corresponds to `parameter` with `in: cookie`                                                            |
+| `api.body`     | `api.body` corresponds to `requestBody` with `content`: `application/json`                                           | 
+| `api.form`     | `api.form` corresponds to `requestBody` with `content`: `multipart/form-data` or `application/x-www-form-urlencoded` | 
+| `api.raw_body` | `api.raw_body` corresponds to `requestBody` with `content`: `text/plain`                                             | 
 
 ### Response Specification
 
@@ -31,11 +31,11 @@ HTTP Swagger document generation plugin for cloudwego/cwgo & hertz.
 
 #### Annotation Explanation
 
-| Annotation     | Explanation                                                                         |  
-|----------------|-------------------------------------------------------------------------------------|
-| `api.header`   | `api.header` corresponds to `response` with `header`                                |
-| `api.body`     | `api.body` corresponds to `response` with `content`: `application/json`             |
-| `api.raw_body` | `api.raw_body` corresponds to `response` with `content`: `application/octet-stream` |
+| Annotation     | Explanation                                                             |  
+|----------------|-------------------------------------------------------------------------|
+| `api.header`   | `api.header` corresponds to `response` with `header`                    |
+| `api.body`     | `api.body` corresponds to `response` with `content`: `application/json` |
+| `api.raw_body` | `api.raw_body` corresponds to `response` with `content`: `text/plain`   |
 
 ### Method Specification
 
@@ -43,16 +43,16 @@ HTTP Swagger document generation plugin for cloudwego/cwgo & hertz.
 
 #### Annotation Explanation
 
-| Annotation    | Explanation                                                   |  
-|---------------|---------------------------------------------------------------|
-| `api.get`     | `api.get` corresponds to GET request, only `parameters `      |
-| `api.put`     | `api.put` corresponds to PUT request                          |
-| `api.post`    | `api.post` corresponds to POST request                        |
-| `api.patch`   | `api.patch` corresponds to PATCH request                      |
-| `api.delete`  | `api.delete` corresponds to DELETE request, only `parameters` |
-| `api.options` | `api.options` corresponds to OPTIONS request                  |
-| `api.head`    | `api.head` corresponds to HEAD request, only `parameters`     |
-| `api.baseurl` | `api.baseurl` corresponds to `server` `url` of `pathItem`     |
+| Annotation    | Explanation                                                                                       |  
+|---------------|---------------------------------------------------------------------------------------------------|
+| `api.get`     | `api.get` corresponds to GET request, only `parameters `                                          |
+| `api.put`     | `api.put` corresponds to PUT request                                                              |
+| `api.post`    | `api.post` corresponds to POST request                                                            |
+| `api.patch`   | `api.patch` corresponds to PATCH request                                                          |
+| `api.delete`  | `api.delete` corresponds to DELETE request, only `parameters`                                     |
+| `api.options` | `api.options` corresponds to OPTIONS request                                                      |
+| `api.head`    | `api.head` corresponds to HEAD request, only `parameters`                                         |
+| `api.baseurl` | `api.baseurl` corresponds to `server` `url` of `pathItem`, This annotation is not supported by hz |
 
 ### Service Specification
 
@@ -88,6 +88,12 @@ go install github.com/hertz-contrib/swagger-generate/protoc-gen-http-swagger@lat
 
 # Verify the installation
 protoc-gen-http-swagger --version
+```
+
+## Usage
+
+```sh
+protoc --http-swagger_out=doc -I idl hello.proto
 ```
 
 ## More info
