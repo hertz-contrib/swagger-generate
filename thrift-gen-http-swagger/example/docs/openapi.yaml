@@ -43,7 +43,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/HelloResp'
+                                $ref: '#/components/schemas/HelloRespBody'
         servers:
             - url: http://127.0.0.1:8888
     /form:
@@ -68,6 +68,20 @@ paths:
                                 form3:
                                     $ref: '#/components/schemas/InnerForm'
                             description: Hello - request
+                    application/x-www-form-urlencoded:
+                        schema:
+                            title: Hello - request
+                            required:
+                                - form1
+                            type: object
+                            properties:
+                                form1:
+                                    title: this is an override field schema title
+                                    maxLength: 255
+                                    type: string
+                                form3:
+                                    $ref: '#/components/schemas/InnerForm'
+                            description: Hello - request
             responses:
                 "200":
                     description: HelloResp
@@ -78,7 +92,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/HelloResp'
+                                $ref: '#/components/schemas/HelloRespBody'
         servers:
             - url: http://127.0.0.1:8888
     /hello1:
@@ -105,7 +119,7 @@ paths:
                 - name: query1
                   in: query
                   description: |-
-                    对于map类型调试时需要转义才能解析，如下所示
+                    对于parameters中的map类型调试时需要转义才能解析，如下所示
                      {
                        "query1":  "{\"key\":\"value\"}"
                      }
@@ -123,7 +137,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/HelloResp'
+                                $ref: '#/components/schemas/HelloRespBody'
         servers:
             - url: http://127.0.0.1:8888
     /hello2:
@@ -152,7 +166,7 @@ paths:
                 - name: query1
                   in: query
                   description: |-
-                    对于map类型调试时需要转义才能解析，如下所示
+                    对于parameters中的map类型调试时需要转义才能解析，如下所示
                      {
                        "query1":  "{\"key\":\"value\"}"
                      }
@@ -170,7 +184,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/HelloResp'
+                                $ref: '#/components/schemas/HelloRespBody'
         servers:
             - url: http://127.0.0.1:8889
     /path{path1}:
@@ -195,12 +209,12 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/HelloResp'
+                                $ref: '#/components/schemas/HelloRespBody'
         servers:
             - url: http://127.0.0.1:8888
 components:
     schemas:
-        HelloResp:
+        HelloRespBody:
             title: Hello - response
             required:
                 - body
