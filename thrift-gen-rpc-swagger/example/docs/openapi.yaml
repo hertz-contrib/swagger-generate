@@ -1,0 +1,115 @@
+# Generated with thrift-gen-rpc-swagger
+# https://github.com/hertz-contrib/swagger-generate/thrift-gen-rpc-swagger
+
+openapi: 3.0.3
+info:
+    title: example swagger doc
+    description: HelloService1描述
+    version: Version from annotation
+servers:
+    - url: http://127.0.0.1:8080
+paths:
+    /body:
+        post:
+            tags:
+                - HelloService1
+            operationId: HelloService1_BodyMethod
+            parameters:
+                - name: query2
+                  in: query
+                  description: 'field: query描述'
+                  schema:
+                    type: string
+            requestBody:
+                description: BodyReq
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            properties:
+                                body:
+                                    type: string
+                                    description: 'field: body描述'
+            responses:
+                "200":
+                    description: HelloResp
+                    headers:
+                        token:
+                            schema:
+                                type: string
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/HelloRespBody'
+    /hello1:
+        get:
+            tags:
+                - HelloService1
+            operationId: HelloService1_QueryMethod
+            parameters:
+                - name: query2
+                  in: query
+                  required: true
+                  schema:
+                    title: Name
+                    maxLength: 50
+                    minLength: 1
+                    type: string
+                    description: Name
+                - name: items
+                  in: query
+                  schema:
+                    type: array
+                    items:
+                        type: string
+            responses:
+                "200":
+                    description: HelloResp
+                    headers:
+                        token:
+                            schema:
+                                type: string
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/HelloRespBody'
+    /path{path1}:
+        get:
+            tags:
+                - HelloService1
+            operationId: HelloService1_PathMethod
+            parameters:
+                - name: path1
+                  in: path
+                  description: 'field: path描述'
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: HelloResp
+                    headers:
+                        token:
+                            schema:
+                                type: string
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/HelloRespBody'
+components:
+    schemas:
+        HelloRespBody:
+            title: Hello - response
+            required:
+                - body
+            type: object
+            properties:
+                body:
+                    title: response content
+                    maxLength: 80
+                    minLength: 1
+                    type: string
+                    description: response content
+            description: Hello - response
+tags:
+    - name: HelloService1
