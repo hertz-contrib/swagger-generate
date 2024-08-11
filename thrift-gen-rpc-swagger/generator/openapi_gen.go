@@ -34,7 +34,6 @@
 package generator
 
 import (
-	"fmt"
 	"path/filepath"
 	"regexp"
 	"sort"
@@ -214,7 +213,7 @@ func (g *OpenAPIGenerator) BuildDocument(arguments *args.Arguments) []*plugin.Ge
 
 	bytes, err := d.YAMLValue("Generated with thrift-gen-rpc-swagger\n" + infoURL)
 	if err != nil {
-		fmt.Printf("Error converting to yaml: %s\n", err)
+		logs.Errorf("Error converting to yaml: %s", err)
 		return nil
 	}
 	filePath := filepath.Clean(arguments.OutputDir)

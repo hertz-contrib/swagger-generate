@@ -18,11 +18,10 @@ package generator
 
 import (
 	"bytes"
-	"fmt"
-	"os"
 	"path/filepath"
 	"text/template"
 
+	"github.com/cloudwego/hertz/cmd/hz/util/logs"
 	"github.com/cloudwego/thriftgo/parser"
 	"github.com/cloudwego/thriftgo/plugin"
 	"github.com/hertz-contrib/swagger-generate/thrift-gen-rpc-swagger/args"
@@ -42,7 +41,7 @@ func NewServerGenerator(ast *parser.Thrift, args *args.Arguments) *ServerGenerat
 
 	idlPath := ast.Filename
 	if idlPath == "" {
-		fmt.Fprintf(os.Stderr, "IDL file path is empty")
+		logs.Errorf("IDL file path is empty")
 	}
 
 	hertzAddr := args.HertzAddr
@@ -71,13 +70,13 @@ func NewServerGenerator(ast *parser.Thrift, args *args.Arguments) *ServerGenerat
 func (g *ServerGenerator) Generate() []*plugin.Generated {
 	tmpl, err := template.New("server").Delims("{{", "}}").Parse(serverTemplate)
 	if err != nil {
-		fmt.Sprintf("failed to parse template: %v", err)
+		logs.Errorf("failed to parse template: %v", err)
 	}
 
 	var buf bytes.Buffer
 	err = tmpl.Execute(&buf, g)
 	if err != nil {
-		fmt.Sprintf("failed to execute template: %v", err)
+		logs.Errorf("failed to execute template: %v", err)
 	}
 
 	filePath := filepath.Clean(g.OutputDir)
