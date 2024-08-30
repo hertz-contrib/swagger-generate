@@ -1,0 +1,229 @@
+# Generated with protoc-gen-http-swagger
+# https://github.com/hertz-contrib/swagger-generate/protoc-gen-http-swagger
+
+openapi: 3.0.3
+info:
+    title: example swagger doc
+    version: Version from annotation
+servers:
+    - url: http://127.0.0.1:8888
+    - url: http://127.0.0.1:8889
+paths:
+    /body:
+        post:
+            tags:
+                - HelloService1
+            operationId: HelloService1_BodyMethod
+            parameters:
+                - name: query2
+                  in: query
+                  description: 'field: query描述'
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            properties:
+                                body:
+                                    type: string
+                                    description: 'field: body描述'
+                                body1:
+                                    type: string
+                                    description: 'field: body1描述'
+            responses:
+                "200":
+                    description: HelloResp描述
+                    headers:
+                        token:
+                            schema:
+                                type: string
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/HelloRespBody'
+        servers:
+            - url: http://127.0.0.1:8888
+    /form:
+        post:
+            tags:
+                - HelloService1
+            operationId: HelloService1_FormMethod
+            requestBody:
+                content:
+                    multipart/form-data:
+                        schema:
+                            title: Hello - request
+                            required:
+                                - form1
+                            type: object
+                            properties:
+                                form1:
+                                    title: this is an override field schema title
+                                    maxLength: 255
+                                    type: string
+                                form2:
+                                    $ref: '#/components/schemas/FormReq_InnerForm'
+                            description: Hello - request
+                    application/x-www-form-urlencoded:
+                        schema:
+                            title: Hello - request
+                            required:
+                                - form1
+                            type: object
+                            properties:
+                                form1:
+                                    title: this is an override field schema title
+                                    maxLength: 255
+                                    type: string
+                                form2:
+                                    $ref: '#/components/schemas/FormReq_InnerForm'
+                            description: Hello - request
+            responses:
+                "200":
+                    description: HelloResp描述
+                    headers:
+                        token:
+                            schema:
+                                type: string
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/HelloRespBody'
+        servers:
+            - url: http://127.0.0.1:8888
+    /hello1:
+        get:
+            tags:
+                - HelloService1
+            operationId: HelloService1_QueryMethod1
+            parameters:
+                - name: query1
+                  in: query
+                  schema:
+                    type: object
+                    additionalProperties:
+                        type: string
+                - name: items
+                  in: query
+                  schema:
+                    type: array
+                    items:
+                        type: string
+                - name: query2
+                  in: query
+                  description: QueryValue描述
+                  required: true
+                  schema:
+                    title: Name
+                    maxLength: 50
+                    minLength: 1
+                    type: string
+                    description: Name
+            responses:
+                "200":
+                    description: HelloResp描述
+                    headers:
+                        token:
+                            schema:
+                                type: string
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/HelloRespBody'
+        servers:
+            - url: http://127.0.0.1:8888
+    /hello2:
+        get:
+            tags:
+                - HelloService2
+            summary: Hello - Get
+            description: Hello - Get
+            operationId: HelloService2_QueryMethod2
+            parameters:
+                - name: query1
+                  in: query
+                  schema:
+                    type: object
+                    additionalProperties:
+                        type: string
+                - name: items
+                  in: query
+                  schema:
+                    type: array
+                    items:
+                        type: string
+                - name: query2
+                  in: query
+                  description: QueryValue描述
+                  required: true
+                  schema:
+                    title: Name
+                    maxLength: 50
+                    minLength: 1
+                    type: string
+                    description: Name
+            responses:
+                "200":
+                    description: HelloResp描述
+                    headers:
+                        token:
+                            schema:
+                                type: string
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/HelloRespBody'
+        servers:
+            - url: http://127.0.0.1:8889
+    /path{path1}:
+        get:
+            tags:
+                - HelloService1
+            operationId: HelloService1_PathMethod
+            parameters:
+                - name: path1
+                  in: path
+                  description: 'field: path描述'
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: HelloResp描述
+                    headers:
+                        token:
+                            schema:
+                                type: string
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/HelloRespBody'
+        servers:
+            - url: http://127.0.0.1:8888
+components:
+    schemas:
+        FormReq_InnerForm:
+            type: object
+            properties:
+                form3:
+                    type: string
+            description: 内嵌message描述
+        HelloRespBody:
+            title: Hello - response
+            required:
+                - body
+            type: object
+            properties:
+                body:
+                    title: response content
+                    maxLength: 80
+                    minLength: 1
+                    type: string
+                    description: response content
+            description: Hello - response
+tags:
+    - name: HelloService1
+      description: HelloService1描述
+    - name: HelloService2
