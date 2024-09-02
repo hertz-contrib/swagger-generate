@@ -45,6 +45,8 @@ import (
 
 var flags flag.FlagSet
 
+const DefaultOutputFile = "openapi.yaml"
+
 func main() {
 	conf := generator.Configuration{
 		Version:        flags.String("version", "3.0.3", "version number text, e.g. 1.2.3"),
@@ -68,7 +70,7 @@ func main() {
 				if !file.Generate {
 					continue
 				}
-				outfileName := strings.TrimSuffix(file.Desc.Path(), filepath.Ext(file.Desc.Path())) + ".openapi.yaml"
+				outfileName := strings.TrimSuffix(file.Desc.Path(), filepath.Ext(file.Desc.Path())) + "." + DefaultOutputFile
 				outputFile := plugin.NewGeneratedFile(outfileName, "")
 				gen := generator.NewOpenAPIGenerator(plugin, conf, []*protogen.File{file})
 				if err := gen.Run(outputFile); err != nil {
@@ -76,7 +78,7 @@ func main() {
 				}
 			}
 		} else {
-			outputFile := plugin.NewGeneratedFile("openapi.yaml", "")
+			outputFile := plugin.NewGeneratedFile(DefaultOutputFile, "")
 			return generator.NewOpenAPIGenerator(plugin, conf, plugin.Files).Run(outputFile)
 		}
 		return nil

@@ -60,10 +60,6 @@ type Configuration struct {
 	OutputMode     *string
 }
 
-const (
-	infoURL = "https://github.com/hertz-contrib/swagger-generate/protoc-gen-http-swagger"
-)
-
 // In order to dynamically add google.rpc.Status responses we need
 // to know the message descriptors for google.rpc.Status as well
 // as google.protobuf.Any.
@@ -110,7 +106,7 @@ func (g *OpenAPIGenerator) Run(outputFile *protogen.GeneratedFile) error {
 func (g *OpenAPIGenerator) buildDocument() *openapi.Document {
 	d := &openapi.Document{}
 
-	d.Openapi = "3.0.3"
+	d.Openapi = OpenAPIVersion
 	d.Info = &openapi.Info{
 		Version:     *g.conf.Version,
 		Title:       *g.conf.Title,
@@ -347,7 +343,7 @@ func (g *OpenAPIGenerator) getSchemaByOption(inputMessage *protogen.Message, bod
 	}
 
 	schema := &openapi.Schema{
-		Type:       "object",
+		Type:       SchemaObjectType,
 		Properties: definitionProperties,
 	}
 
@@ -384,7 +380,7 @@ func (g *OpenAPIGenerator) buildOperation(
 		// Check for each type of extension (query, path, cookie, header)
 		if ext = proto.GetExtension(field.Desc.Options(), api.E_Query); ext != "" {
 			paramName = proto.GetExtension(field.Desc.Options(), api.E_Query).(string)
-			paramIn = "query"
+			paramIn = ParameterInQuery
 			paramDesc = g.filterCommentString(field.Comments.Leading)
 			fieldSchema = g.reflect.schemaOrReferenceForField(field.Desc)
 			if schema, ok := fieldSchema.Oneof.(*openapi.SchemaOrReference_Schema); ok {
@@ -400,7 +396,7 @@ func (g *OpenAPIGenerator) buildOperation(
 			}
 		} else if ext = proto.GetExtension(field.Desc.Options(), api.E_Path); ext != "" {
 			paramName = proto.GetExtension(field.Desc.Options(), api.E_Path).(string)
-			paramIn = "path"
+			paramIn = ParameterInPath
 			paramDesc = g.filterCommentString(field.Comments.Leading)
 			fieldSchema = g.reflect.schemaOrReferenceForField(field.Desc)
 			if schema, ok := fieldSchema.Oneof.(*openapi.SchemaOrReference_Schema); ok {
@@ -414,7 +410,7 @@ func (g *OpenAPIGenerator) buildOperation(
 			required = true
 		} else if ext = proto.GetExtension(field.Desc.Options(), api.E_Cookie); ext != "" {
 			paramName = proto.GetExtension(field.Desc.Options(), api.E_Cookie).(string)
-			paramIn = "cookie"
+			paramIn = ParameterInCookie
 			paramDesc = g.filterCommentString(field.Comments.Leading)
 			fieldSchema = g.reflect.schemaOrReferenceForField(field.Desc)
 			if schema, ok := fieldSchema.Oneof.(*openapi.SchemaOrReference_Schema); ok {
@@ -426,7 +422,7 @@ func (g *OpenAPIGenerator) buildOperation(
 			}
 		} else if ext = proto.GetExtension(field.Desc.Options(), api.E_Header); ext != "" {
 			paramName = proto.GetExtension(field.Desc.Options(), api.E_Header).(string)
-			paramIn = "header"
+			paramIn = ParameterInHeader
 			paramDesc = g.filterCommentString(field.Comments.Leading)
 			fieldSchema = g.reflect.schemaOrReferenceForField(field.Desc)
 			if schema, ok := fieldSchema.Oneof.(*openapi.SchemaOrReference_Schema); ok {
@@ -473,7 +469,7 @@ func (g *OpenAPIGenerator) buildOperation(
 
 		if len(bodySchema.Properties.AdditionalProperties) > 0 {
 			additionalProperties = append(additionalProperties, &openapi.NamedMediaType{
-				Name: "application/json",
+				Name: ContentTypeJSON,
 				Value: &openapi.MediaType{
 					Schema: &openapi.SchemaOrReference{
 						Oneof: &openapi.SchemaOrReference_Schema{
@@ -486,7 +482,7 @@ func (g *OpenAPIGenerator) buildOperation(
 
 		if len(formSchema.Properties.AdditionalProperties) > 0 {
 			additionalProperties = append(additionalProperties, &openapi.NamedMediaType{
-				Name: "multipart/form-data",
+				Name: ContentTypeFormMultipart,
 				Value: &openapi.MediaType{
 					Schema: &openapi.SchemaOrReference{
 						Oneof: &openapi.SchemaOrReference_Schema{
@@ -497,7 +493,7 @@ func (g *OpenAPIGenerator) buildOperation(
 			})
 
 			additionalProperties = append(additionalProperties, &openapi.NamedMediaType{
-				Name: "application/x-www-form-urlencoded",
+				Name: ContentTypeFormURLEncoded,
 				Value: &openapi.MediaType{
 					Schema: &openapi.SchemaOrReference{
 						Oneof: &openapi.SchemaOrReference_Schema{
@@ -510,7 +506,7 @@ func (g *OpenAPIGenerator) buildOperation(
 
 		if len(rawBodySchema.Properties.AdditionalProperties) > 0 {
 			additionalProperties = append(additionalProperties, &openapi.NamedMediaType{
-				Name: "text/plain",
+				Name: ContentTypeRawBody,
 				Value: &openapi.MediaType{
 					Schema: &openapi.SchemaOrReference{
 						Oneof: &openapi.SchemaOrReference_Schema{
@@ -539,7 +535,7 @@ func (g *OpenAPIGenerator) buildOperation(
 
 	desc := g.filterCommentString(outputMessage.Comments.Leading)
 	if desc == "" {
-		desc = "Successful response"
+		desc = DefaultResponseDesc
 	}
 
 	var headerOrEmpty *openapi.HeadersOrReferences
@@ -626,7 +622,7 @@ func (g *OpenAPIGenerator) getResponseForMessage(d *openapi.Document, message *p
 		ref := "#/components/schemas/" + g.reflect.formatMessageName(message.Desc) + "Body"
 		g.addSchemaToDocument(d, refSchema)
 		additionalProperties = append(additionalProperties, &openapi.NamedMediaType{
-			Name: "application/json",
+			Name: ContentTypeJSON,
 			Value: &openapi.MediaType{
 				Schema: &openapi.SchemaOrReference{
 					Oneof: &openapi.SchemaOrReference_Reference{
@@ -645,7 +641,7 @@ func (g *OpenAPIGenerator) getResponseForMessage(d *openapi.Document, message *p
 		ref := "#/components/schemas/" + g.reflect.formatMessageName(message.Desc) + "RawBody"
 		g.addSchemaToDocument(d, refSchema)
 		additionalProperties = append(additionalProperties, &openapi.NamedMediaType{
-			Name: "text/plain",
+			Name: ContentTypeRawBody,
 			Value: &openapi.MediaType{
 				Schema: &openapi.SchemaOrReference{
 					Oneof: &openapi.SchemaOrReference_Reference{
@@ -660,7 +656,7 @@ func (g *OpenAPIGenerator) getResponseForMessage(d *openapi.Document, message *p
 		AdditionalProperties: additionalProperties,
 	}
 
-	return "200", headers, content
+	return StatusOK, headers, content
 }
 
 // addOperationToDocument adds an operation to the specified path/method.
@@ -860,7 +856,7 @@ func (g *OpenAPIGenerator) addSchemasForMessagesToDocument(d *openapi.Document, 
 		}
 
 		schema := &openapi.Schema{
-			Type:        "object",
+			Type:        SchemaObjectType,
 			Description: messageDescription,
 			Properties:  definitionProperties,
 			Required:    required,
@@ -883,3 +879,22 @@ func (g *OpenAPIGenerator) addSchemasForMessagesToDocument(d *openapi.Document, 
 		})
 	}
 }
+
+const (
+	OpenAPIVersion = "3.0.3"
+	infoURL        = "https://github.com/hertz-contrib/swagger-generate/protoc-gen-http-swagger"
+
+	DefaultResponseDesc = "Successful response"
+	StatusOK            = "200"
+	SchemaObjectType    = "object"
+
+	ContentTypeJSON           = "application/json"
+	ContentTypeFormMultipart  = "multipart/form-data"
+	ContentTypeFormURLEncoded = "application/x-www-form-urlencoded"
+	ContentTypeRawBody        = "text/plain"
+
+	ParameterInQuery  = "query"
+	ParameterInHeader = "header"
+	ParameterInPath   = "path"
+	ParameterInCookie = "cookie"
+)

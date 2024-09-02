@@ -17,8 +17,9 @@ paths:
             parameters:
                 - name: ttheader
                   in: query
+                  description: metainfo for request
                   schema:
-                    type: object
+                      type: object
             requestBody:
                 description: BodyReq
                 content:
@@ -47,8 +48,9 @@ paths:
             parameters:
                 - name: ttheader
                   in: query
+                  description: metainfo for request
                   schema:
-                    type: object
+                      type: object
             requestBody:
                 description: PathReq
                 content:
@@ -74,8 +76,9 @@ paths:
             parameters:
                 - name: ttheader
                   in: query
+                  description: metainfo for request
                   schema:
-                    type: object
+                      type: object
             requestBody:
                 description: QueryReq
                 content:
@@ -89,7 +92,7 @@ paths:
                                     minLength: 1
                                     type: string
                                     description: Name
-                                items:
+                                Items:
                                     type: array
                                     items:
                                         type: string
@@ -104,6 +107,8 @@ components:
     schemas:
         HelloResp:
             title: Hello - response
+            required:
+                - RespBody
             type: object
             properties:
                 RespBody:
@@ -119,3 +124,4 @@ components:
             description: Hello - response
 tags:
     - name: HelloService1
+      description: HelloService1描述

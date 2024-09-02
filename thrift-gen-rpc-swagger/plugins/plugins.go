@@ -50,14 +50,14 @@ func Run() int {
 }
 
 func handleRequest(req *plugin.Request) (err error) {
+	if req == nil {
+		fmt.Fprintf(os.Stderr, "unexpected nil request")
+	}
+
 	args := new(args.Arguments)
 	if err := args.Unpack(req.PluginParameters); err != nil {
 		log.Printf("[Error]: unpack args failed: %s", err.Error())
 		return err
-	}
-
-	if req == nil {
-		fmt.Fprintf(os.Stderr, "unexpected nil request")
 	}
 
 	ast := req.GetAST()
