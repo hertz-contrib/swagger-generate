@@ -248,27 +248,6 @@ func GetAnnotation(input parser.Annotations, target string) []string {
 	return []string{}
 }
 
-func GetAnnotations(input parser.Annotations, targets map[string]string) map[string][]string {
-	if len(input) == 0 || len(targets) == 0 {
-		return nil
-	}
-	out := map[string][]string{}
-	for k, t := range targets {
-		var ret *parser.Annotation
-		for _, anno := range input {
-			if strings.ToLower(anno.Key) == k {
-				ret = anno
-				break
-			}
-		}
-		if ret == nil {
-			continue
-		}
-		out[t] = ret.Values
-	}
-	return out
-}
-
 func AppendUnique(s []string, e string) []string {
 	if !Contains(s, e) {
 		return append(s, e)

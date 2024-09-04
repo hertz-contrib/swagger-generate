@@ -460,7 +460,7 @@ func (g *OpenAPIGenerator) buildOperation(
 	}
 
 	var RequestBody *openapi.RequestBodyOrReference
-	if methodName != "GET" && methodName != "HEAD" && methodName != "DELETE" {
+	if methodName != HttpMethodGet && methodName != HttpMethodHead && methodName != HttpMethodDelete {
 		bodySchema := g.getSchemaByOption(inputMessage, api.E_Body)
 		formSchema := g.getSchemaByOption(inputMessage, api.E_Form)
 		rawBodySchema := g.getSchemaByOption(inputMessage, api.E_RawBody)
@@ -578,8 +578,8 @@ func (g *OpenAPIGenerator) buildOperation(
 		RequestBody: RequestBody,
 	}
 	if defaultHost != "" {
-		if !strings.HasPrefix(defaultHost, "http://") && !strings.HasPrefix(defaultHost, "https://") {
-			defaultHost = "http://" + defaultHost
+		if !strings.HasPrefix(defaultHost, URLDefaultPrefixHTTP) && !strings.HasPrefix(defaultHost, URLDefaultPrefixHTTPS) {
+			defaultHost = URLDefaultPrefixHTTP + defaultHost
 		}
 		op.Servers = append(op.Servers, &openapi.Server{Url: defaultHost})
 	}
@@ -616,10 +616,10 @@ func (g *OpenAPIGenerator) getResponseForMessage(d *openapi.Document, message *p
 
 	if len(bodySchema.Properties.AdditionalProperties) > 0 {
 		refSchema := &openapi.NamedSchemaOrReference{
-			Name:  g.reflect.formatMessageName(message.Desc) + "Body",
+			Name:  g.reflect.formatMessageName(message.Desc) + ComponentSchemaSuffixBody,
 			Value: &openapi.SchemaOrReference{Oneof: &openapi.SchemaOrReference_Schema{Schema: bodySchema}},
 		}
-		ref := "#/components/schemas/" + g.reflect.formatMessageName(message.Desc) + "Body"
+		ref := ComponentSchemaPrefix + g.reflect.formatMessageName(message.Desc) + ComponentSchemaSuffixBody
 		g.addSchemaToDocument(d, refSchema)
 		additionalProperties = append(additionalProperties, &openapi.NamedMediaType{
 			Name: ContentTypeJSON,
@@ -635,10 +635,10 @@ func (g *OpenAPIGenerator) getResponseForMessage(d *openapi.Document, message *p
 
 	if len(rawBodySchema.Properties.AdditionalProperties) > 0 {
 		refSchema := &openapi.NamedSchemaOrReference{
-			Name:  g.reflect.formatMessageName(message.Desc) + "RawBody",
+			Name:  g.reflect.formatMessageName(message.Desc) + ComponentSchemaSuffixRawBody,
 			Value: &openapi.SchemaOrReference{Oneof: &openapi.SchemaOrReference_Schema{Schema: rawBodySchema}},
 		}
-		ref := "#/components/schemas/" + g.reflect.formatMessageName(message.Desc) + "RawBody"
+		ref := ComponentSchemaPrefix + g.reflect.formatMessageName(message.Desc) + ComponentSchemaSuffixRawBody
 		g.addSchemaToDocument(d, refSchema)
 		additionalProperties = append(additionalProperties, &openapi.NamedMediaType{
 			Name: ContentTypeRawBody,
@@ -675,19 +675,19 @@ func (g *OpenAPIGenerator) addOperationToDocument(d *openapi.Document, op *opena
 	}
 	// Set the operation on the specified method.
 	switch methodName {
-	case "GET":
+	case HttpMethodGet:
 		selectedPathItem.Value.Get = op
-	case "POST":
+	case HttpMethodPost:
 		selectedPathItem.Value.Post = op
-	case "PUT":
+	case HttpMethodPut:
 		selectedPathItem.Value.Put = op
-	case "DELETE":
+	case HttpMethodDelete:
 		selectedPathItem.Value.Delete = op
-	case "PATCH":
+	case HttpMethodPatch:
 		selectedPathItem.Value.Patch = op
-	case "OPTIONS":
+	case HttpMethodOptions:
 		selectedPathItem.Value.Options = op
-	case "HEAD":
+	case HttpMethodHead:
 		selectedPathItem.Value.Head = op
 	}
 }
@@ -881,12 +881,27 @@ func (g *OpenAPIGenerator) addSchemasForMessagesToDocument(d *openapi.Document, 
 }
 
 const (
-	OpenAPIVersion = "3.0.3"
-	infoURL        = "https://github.com/hertz-contrib/swagger-generate/protoc-gen-http-swagger"
+	HttpMethodGet     = "GET"
+	HttpMethodPost    = "POST"
+	HttpMethodPut     = "PUT"
+	HttpMethodPatch   = "PATCH"
+	HttpMethodDelete  = "DELETE"
+	HttpMethodOptions = "OPTIONS"
+	HttpMethodHead    = "HEAD"
+)
 
-	DefaultResponseDesc = "Successful response"
-	StatusOK            = "200"
-	SchemaObjectType    = "object"
+const (
+	OpenAPIVersion        = "3.0.3"
+	infoURL               = "https://github.com/hertz-contrib/swagger-generate/protoc-gen-http-swagger"
+	URLDefaultPrefixHTTP  = "http://"
+	URLDefaultPrefixHTTPS = "https://"
+
+	DefaultResponseDesc          = "Successful response"
+	StatusOK                     = "200"
+	SchemaObjectType             = "object"
+	ComponentSchemaPrefix        = "#/components/schemas/"
+	ComponentSchemaSuffixBody    = "Body"
+	ComponentSchemaSuffixRawBody = "RawBody"
 
 	ContentTypeJSON           = "application/json"
 	ContentTypeFormMultipart  = "multipart/form-data"
