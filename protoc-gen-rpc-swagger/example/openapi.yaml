@@ -1,0 +1,202 @@
+# Generated with protoc-gen-rpc-swagger
+# https://github.com/hertz-contrib/swagger-generate/protoc-gen-rpc-swagger
+
+openapi: 3.0.3
+info:
+    title: example swagger doc
+    version: Version from annotation
+servers:
+    - url: http://127.0.0.1:8080
+paths:
+    /HelloService1/BodyMethod:
+        post:
+            tags:
+                - HelloService1
+            operationId: HelloService1_BodyMethod
+            parameters:
+                - name: ttheader
+                  in: query
+                  description: metainfo for request
+                  schema:
+                      type: object
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/BodyReq'
+            responses:
+                "200":
+                    description: HelloResp描述
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/HelloResp'
+    /HelloService1/FormMethod:
+        post:
+            tags:
+                - HelloService1
+            operationId: HelloService1_FormMethod
+            parameters:
+                - name: ttheader
+                  in: query
+                  description: metainfo for request
+                  schema:
+                      type: object
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/FormReq'
+            responses:
+                "200":
+                    description: HelloResp描述
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/HelloResp'
+    /HelloService1/PathMethod:
+        post:
+            tags:
+                - HelloService1
+            operationId: HelloService1_PathMethod
+            parameters:
+                - name: ttheader
+                  in: query
+                  description: metainfo for request
+                  schema:
+                      type: object
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/PathReq'
+            responses:
+                "200":
+                    description: HelloResp描述
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/HelloResp'
+    /HelloService1/QueryMethod1:
+        post:
+            tags:
+                - HelloService1
+            operationId: HelloService1_QueryMethod1
+            parameters:
+                - name: ttheader
+                  in: query
+                  description: metainfo for request
+                  schema:
+                      type: object
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/QueryReq'
+            responses:
+                "200":
+                    description: HelloResp描述
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/HelloResp'
+    /HelloService2/QueryMethod2:
+        post:
+            tags:
+                - HelloService2
+            summary: Hello - Get
+            description: Hello - Get
+            operationId: HelloService2_QueryMethod2
+            parameters:
+                - name: ttheader
+                  in: query
+                  description: metainfo for request
+                  schema:
+                      type: object
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/QueryReq'
+            responses:
+                "200":
+                    description: HelloResp描述
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/HelloResp'
+components:
+    schemas:
+        BodyReq:
+            type: object
+            properties:
+                BodyValue:
+                    type: string
+                    description: 'field: body描述'
+                QueryValue:
+                    type: string
+                    description: 'field: query描述'
+                Body1Value:
+                    type: string
+                    description: 'field: body1描述'
+        FormReq:
+            title: Hello - request
+            type: object
+            properties:
+                FormValue:
+                    title: this is an override field schema title
+                    maxLength: 255
+                    type: string
+                FormValue1:
+                    $ref: '#/components/schemas/FormReq_InnerForm'
+            description: Hello - request
+        FormReq_InnerForm:
+            type: object
+            properties:
+                InnerFormValue:
+                    type: string
+            description: 内嵌message描述
+        HelloResp:
+            title: Hello - response
+            required:
+                - RespBody
+            type: object
+            properties:
+                RespBody:
+                    title: response content
+                    maxLength: 80
+                    minLength: 1
+                    type: string
+                    description: response content
+                token:
+                    title: token
+                    type: string
+                    description: token
+            description: Hello - response
+        PathReq:
+            type: object
+            properties:
+                PathValue:
+                    type: string
+                    description: 'field: path描述'
+        QueryReq:
+            type: object
+            properties:
+                stringsMap:
+                    type: object
+                    additionalProperties:
+                        type: string
+                items:
+                    type: array
+                    items:
+                        type: string
+                QueryValue:
+                    title: Name
+                    maxLength: 50
+                    minLength: 1
+                    type: string
+                    description: Name
+tags:
+    - name: HelloService1
+      description: HelloService1描述
+    - name: HelloService2
