@@ -93,8 +93,16 @@ protoc-gen-http-swagger --version
 
 ## 使用
 
+### 生成 swagger 文档
+
 ```sh
-protoc --http-swagger_out=doc -I idl hello.proto
+protoc --http-swagger_out=swagger -I idl hello.proto
+```
+
+### 在 Hertz Server 中绑定 swagger 服务开启 swagger-ui
+
+```sh
+swagger.BindSwagger(r)
 ```
 
 ## 更多信息

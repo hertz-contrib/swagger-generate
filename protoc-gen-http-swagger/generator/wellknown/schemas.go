@@ -34,7 +34,7 @@
 package wellknown
 
 import (
-	v3 "github.com/hertz-contrib/swagger-generate/protoc-gen-http-swagger/protobuf/openapi"
+	v3 "github.com/hertz-contrib/swagger-generate/idl/protobuf/openapi"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 

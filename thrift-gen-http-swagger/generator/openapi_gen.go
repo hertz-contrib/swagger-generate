@@ -34,18 +34,21 @@
 package generator
 
 import (
-	"fmt"
 	"path/filepath"
 	"regexp"
 	"sort"
 	"strings"
 
+	"github.com/cloudwego/thriftgo/semantic"
+	"github.com/hertz-contrib/swagger-generate/common/consts"
+
 	"github.com/cloudwego/hertz/cmd/hz/util/logs"
 	"github.com/cloudwego/thriftgo/parser"
 	"github.com/cloudwego/thriftgo/plugin"
 	"github.com/cloudwego/thriftgo/thrift_reflection"
+	common "github.com/hertz-contrib/swagger-generate/common/utils"
+	openapi "github.com/hertz-contrib/swagger-generate/idl/thrift"
 	"github.com/hertz-contrib/swagger-generate/thrift-gen-http-swagger/args"
-	openapi "github.com/hertz-contrib/swagger-generate/thrift-gen-http-swagger/thrift"
 	"github.com/hertz-contrib/swagger-generate/thrift-gen-http-swagger/utils"
 )
 
@@ -65,20 +68,20 @@ func NewOpenAPIGenerator(ast *parser.Thrift) *OpenAPIGenerator {
 		fileDesc:          fileDesc,
 		ast:               ast,
 		generatedSchemas:  make([]string, 0),
-		commentPattern:    regexp.MustCompile(`//\s*(.*)|/\*([\s\S]*?)\*/`),
-		linterRulePattern: regexp.MustCompile(`\(-- .* --\)`),
+		commentPattern:    regexp.MustCompile(consts.CommentPatternRegexp),
+		linterRulePattern: regexp.MustCompile(consts.LinterRulePatternRegexp),
 	}
 }
 
 func (g *OpenAPIGenerator) BuildDocument(arguments *args.Arguments) []*plugin.Generated {
 	d := &openapi.Document{}
 
-	version := OpenAPIVersion
+	version := consts.OpenAPIVersion
 	d.Openapi = version
 	d.Info = &openapi.Info{
-		Title:       DefaultInfoTitle,
-		Description: DefaultInfoDesc,
-		Version:     DefaultInfoVersion,
+		Title:       consts.DefaultInfoTitle,
+		Description: consts.DefaultInfoDesc,
+		Version:     consts.DefaultInfoVersion,
 	}
 	d.Paths = &openapi.Paths{}
 	d.Components = &openapi.Components{
@@ -90,18 +93,22 @@ func (g *OpenAPIGenerator) BuildDocument(arguments *args.Arguments) []*plugin.Ge
 	var extDocument *openapi.Document
 	err := g.getDocumentOption(&extDocument)
 	if err != nil {
-		fmt.Printf("Error getting document option: %s\n", err)
+		logs.Errorf("Error merging document option: %s", err)
 		return nil
 	}
 	if extDocument != nil {
-		utils.MergeStructs(d, extDocument)
+		err := common.MergeStructs(d, extDocument)
+		if err != nil {
+			logs.Errorf("Error merging document option: %s", err)
+			return nil
+		}
 	}
 
 	g.addPathsToDocument(d, g.ast.Services)
 
 	for len(g.requiredSchemas) > 0 {
 		count := len(g.requiredSchemas)
-		g.addSchemasForStructsToDocument(d, g.ast.GetStructLikes())
+		g.addSchemasForStructsToDocument(d, g.fileDesc.GetStructs())
 		g.requiredSchemas = g.requiredSchemas[count:len(g.requiredSchemas)]
 	}
 
@@ -122,24 +129,24 @@ func (g *OpenAPIGenerator) BuildDocument(arguments *args.Arguments) []*plugin.Ge
 		var servers []string
 		// Only 1 server will ever be set, per method, by the generator
 		if path.Value.Get != nil && len(path.Value.Get.Servers) == 1 {
-			servers = utils.AppendUnique(servers, path.Value.Get.Servers[0].URL)
-			allServers = utils.AppendUnique(allServers, path.Value.Get.Servers[0].URL)
+			servers = common.AppendUnique(servers, path.Value.Get.Servers[0].URL)
+			allServers = common.AppendUnique(allServers, path.Value.Get.Servers[0].URL)
 		}
 		if path.Value.Post != nil && len(path.Value.Post.Servers) == 1 {
-			servers = utils.AppendUnique(servers, path.Value.Post.Servers[0].URL)
-			allServers = utils.AppendUnique(allServers, path.Value.Post.Servers[0].URL)
+			servers = common.AppendUnique(servers, path.Value.Post.Servers[0].URL)
+			allServers = common.AppendUnique(allServers, path.Value.Post.Servers[0].URL)
 		}
 		if path.Value.Put != nil && len(path.Value.Put.Servers) == 1 {
-			servers = utils.AppendUnique(servers, path.Value.Put.Servers[0].URL)
-			allServers = utils.AppendUnique(allServers, path.Value.Put.Servers[0].URL)
+			servers = common.AppendUnique(servers, path.Value.Put.Servers[0].URL)
+			allServers = common.AppendUnique(allServers, path.Value.Put.Servers[0].URL)
 		}
 		if path.Value.Delete != nil && len(path.Value.Delete.Servers) == 1 {
-			servers = utils.AppendUnique(servers, path.Value.Delete.Servers[0].URL)
-			allServers = utils.AppendUnique(allServers, path.Value.Delete.Servers[0].URL)
+			servers = common.AppendUnique(servers, path.Value.Delete.Servers[0].URL)
+			allServers = common.AppendUnique(allServers, path.Value.Delete.Servers[0].URL)
 		}
 		if path.Value.Patch != nil && len(path.Value.Patch.Servers) == 1 {
-			servers = utils.AppendUnique(servers, path.Value.Patch.Servers[0].URL)
-			allServers = utils.AppendUnique(allServers, path.Value.Patch.Servers[0].URL)
+			servers = common.AppendUnique(servers, path.Value.Patch.Servers[0].URL)
+			allServers = common.AppendUnique(allServers, path.Value.Patch.Servers[0].URL)
 		}
 
 		if len(servers) == 1 {
@@ -202,13 +209,16 @@ func (g *OpenAPIGenerator) BuildDocument(arguments *args.Arguments) []*plugin.Ge
 		d.Components.Schemas.AdditionalProperties = pairs
 	}
 
-	bytes, err := d.YAMLValue("Generated with thrift-gen-http-swagger\n" + infoURL)
+	bytes, err := d.YAMLValue("Generated with " + consts.PluginNameThriftHttpSwagger + "\n" + consts.InfoURL + consts.PluginNameThriftHttpSwagger)
 	if err != nil {
-		fmt.Printf("Error converting to yaml: %s\n", err)
+		logs.Errorf("Error converting to yaml: %s", err)
 		return nil
 	}
-	filePath := filepath.Clean(arguments.OutputDir)
-	filePath = filepath.Join(filePath, DefaultOutputFile)
+	outputDir := arguments.OutputDir
+	if outputDir == "" {
+		outputDir = consts.DefaultOutputDir
+	}
+	filePath := filepath.Join(outputDir, consts.DefaultOutputYamlFile)
 	var ret []*plugin.Generated
 	ret = append(ret, &plugin.Generated{
 		Content: string(bytes),
@@ -220,15 +230,15 @@ func (g *OpenAPIGenerator) BuildDocument(arguments *args.Arguments) []*plugin.Ge
 
 func (g *OpenAPIGenerator) getDocumentOption(obj interface{}) error {
 	serviceOrStruct, name := g.getDocumentAnnotationInWhichServiceOrStruct()
-	if serviceOrStruct == DocumentOptionServiceType {
+	if serviceOrStruct == consts.DocumentOptionServiceType {
 		serviceDesc := g.fileDesc.GetServiceDescriptor(name)
-		err := utils.ParseServiceOption(serviceDesc, OpenapiDocument, obj)
+		err := utils.ParseServiceOption(serviceDesc, consts.OpenapiDocument, obj)
 		if err != nil {
 			return err
 		}
-	} else if serviceOrStruct == DocumentOptionStructType {
+	} else if serviceOrStruct == consts.DocumentOptionStructType {
 		structDesc := g.fileDesc.GetStructDescriptor(name)
-		err := utils.ParseStructOption(structDesc, OpenapiDocument, obj)
+		err := utils.ParseStructOption(structDesc, consts.OpenapiDocument, obj)
 		if err != nil {
 			return err
 		}
@@ -259,27 +269,27 @@ func (g *OpenAPIGenerator) addPathsToDocument(d *openapi.Document, services []*p
 				if methodName != "" {
 					annotationsCount++
 					var host string
-					hostOrNil := utils.GetAnnotation(f.Annotations, ApiBaseURL)
+					hostOrNil := utils.GetAnnotation(f.Annotations, consts.ApiBaseURL)
 
 					if len(hostOrNil) != 0 {
-						host = utils.GetAnnotation(f.Annotations, ApiBaseURL)[0]
+						host = utils.GetAnnotation(f.Annotations, consts.ApiBaseURL)[0]
 					}
 
 					if host == "" {
-						hostOrNil = utils.GetAnnotation(s.Annotations, ApiBaseDomain)
+						hostOrNil = utils.GetAnnotation(s.Annotations, consts.ApiBaseDomain)
 						if len(hostOrNil) != 0 {
-							host = utils.GetAnnotation(s.Annotations, ApiBaseDomain)[0]
+							host = utils.GetAnnotation(s.Annotations, consts.ApiBaseDomain)[0]
 						}
 					}
 
 					op, path2 := g.buildOperation(d, methodName, comment, operationID, s.GetName(), path[0], host, inputDesc, outputDesc)
 					methodDesc := g.fileDesc.GetMethodDescriptor(s.GetName(), f.GetName())
 					newOp := &openapi.Operation{}
-					err := utils.ParseMethodOption(methodDesc, OpenapiOperation, &newOp)
+					err := utils.ParseMethodOption(methodDesc, consts.OpenapiOperation, &newOp)
 					if err != nil {
 						logs.Errorf("Error parsing method option: %s", err)
 					}
-					utils.MergeStructs(op, newOp)
+					common.MergeStructs(op, newOp)
 					g.addOperationToDocument(d, op, path2, methodName)
 				}
 			}
@@ -310,76 +320,76 @@ func (g *OpenAPIGenerator) buildOperation(
 		var fieldSchema *openapi.SchemaOrReference
 		required := false
 
-		extOrNil := v.Annotations[ApiQuery]
+		extOrNil := v.Annotations[consts.ApiQuery]
 		if len(extOrNil) > 0 {
-			if ext := v.Annotations[ApiQuery][0]; ext != "" {
-				paramIn = ParameterInQuery
+			if ext := v.Annotations[consts.ApiQuery][0]; ext != "" {
+				paramIn = consts.ParameterInQuery
 				paramName = ext
 				paramDesc = g.filterCommentString(v.Comments)
 				fieldSchema = g.schemaOrReferenceForField(v.Type)
-				extPropertyOrNil := v.Annotations[OpenapiProperty]
+				extPropertyOrNil := v.Annotations[consts.OpenapiProperty]
 				if len(extPropertyOrNil) > 0 {
 					newFieldSchema := &openapi.Schema{}
-					err := utils.ParseFieldOption(v, OpenapiProperty, &newFieldSchema)
+					err := utils.ParseFieldOption(v, consts.OpenapiProperty, &newFieldSchema)
 					if err != nil {
 						logs.Errorf("Error parsing field option: %s", err)
 					}
-					utils.MergeStructs(fieldSchema.Schema, newFieldSchema)
+					common.MergeStructs(fieldSchema.Schema, newFieldSchema)
 				}
 			}
 		}
-		extOrNil = v.Annotations[ApiPath]
+		extOrNil = v.Annotations[consts.ApiPath]
 		if len(extOrNil) > 0 {
-			if ext := v.Annotations[ApiPath][0]; ext != "" {
-				paramIn = ParameterInPath
+			if ext := v.Annotations[consts.ApiPath][0]; ext != "" {
+				paramIn = consts.ParameterInPath
 				paramName = ext
 				paramDesc = g.filterCommentString(v.Comments)
 				fieldSchema = g.schemaOrReferenceForField(v.Type)
-				extPropertyOrNil := v.Annotations[OpenapiProperty]
+				extPropertyOrNil := v.Annotations[consts.OpenapiProperty]
 				if len(extPropertyOrNil) > 0 {
 					newFieldSchema := &openapi.Schema{}
-					err := utils.ParseFieldOption(v, OpenapiProperty, &newFieldSchema)
+					err := utils.ParseFieldOption(v, consts.OpenapiProperty, &newFieldSchema)
 					if err != nil {
 						logs.Errorf("Error parsing field option: %s", err)
 					}
-					utils.MergeStructs(fieldSchema.Schema, newFieldSchema)
+					common.MergeStructs(fieldSchema.Schema, newFieldSchema)
 				}
 				required = true
 			}
 		}
-		extOrNil = v.Annotations[ApiCookie]
+		extOrNil = v.Annotations[consts.ApiCookie]
 		if len(extOrNil) > 0 {
-			if ext := v.Annotations[ApiCookie][0]; ext != "" {
-				paramIn = ParameterInCookie
+			if ext := v.Annotations[consts.ApiCookie][0]; ext != "" {
+				paramIn = consts.ParameterInCookie
 				paramName = ext
 				paramDesc = g.filterCommentString(v.Comments)
 				fieldSchema = g.schemaOrReferenceForField(v.Type)
-				extPropertyOrNil := v.Annotations[OpenapiProperty]
+				extPropertyOrNil := v.Annotations[consts.OpenapiProperty]
 				if len(extPropertyOrNil) > 0 {
 					newFieldSchema := &openapi.Schema{}
-					err := utils.ParseFieldOption(v, OpenapiProperty, &newFieldSchema)
+					err := utils.ParseFieldOption(v, consts.OpenapiProperty, &newFieldSchema)
 					if err != nil {
 						logs.Errorf("Error parsing field option: %s", err)
 					}
-					utils.MergeStructs(fieldSchema.Schema, newFieldSchema)
+					common.MergeStructs(fieldSchema.Schema, newFieldSchema)
 				}
 			}
 		}
-		extOrNil = v.Annotations[ApiHeader]
+		extOrNil = v.Annotations[consts.ApiHeader]
 		if len(extOrNil) > 0 {
-			if ext := v.Annotations[ApiHeader][0]; ext != "" {
-				paramIn = ParameterInHeader
+			if ext := v.Annotations[consts.ApiHeader][0]; ext != "" {
+				paramIn = consts.ParameterInHeader
 				paramName = ext
 				paramDesc = g.filterCommentString(v.Comments)
 				fieldSchema = g.schemaOrReferenceForField(v.Type)
-				extPropertyOrNil := v.Annotations[OpenapiProperty]
+				extPropertyOrNil := v.Annotations[consts.OpenapiProperty]
 				if len(extPropertyOrNil) > 0 {
 					newFieldSchema := &openapi.Schema{}
-					err := utils.ParseFieldOption(v, OpenapiProperty, &newFieldSchema)
+					err := utils.ParseFieldOption(v, consts.OpenapiProperty, &newFieldSchema)
 					if err != nil {
 						logs.Errorf("Error parsing field option: %s", err)
 					}
-					utils.MergeStructs(fieldSchema.Schema, newFieldSchema)
+					common.MergeStructs(fieldSchema.Schema, newFieldSchema)
 				}
 			}
 		}
@@ -393,11 +403,11 @@ func (g *OpenAPIGenerator) buildOperation(
 		}
 
 		var extParameter *openapi.Parameter
-		err := utils.ParseFieldOption(v, OpenapiParameter, &extParameter)
+		err := utils.ParseFieldOption(v, consts.OpenapiParameter, &extParameter)
 		if err != nil {
 			logs.Errorf("Error parsing field option: %s", err)
 		}
-		utils.MergeStructs(parameter, extParameter)
+		common.MergeStructs(parameter, extParameter)
 
 		// Append the parameter to the parameters array if it was set
 		if paramName != "" && paramIn != "" {
@@ -408,15 +418,15 @@ func (g *OpenAPIGenerator) buildOperation(
 	}
 
 	var RequestBody *openapi.RequestBodyOrReference
-	if methodName != HttpMethodGet && methodName != HttpMethodHead && methodName != HttpMethodDelete {
-		bodySchema := g.getSchemaByOption(inputDesc, ApiBody)
-		formSchema := g.getSchemaByOption(inputDesc, ApiForm)
-		rawBodySchema := g.getSchemaByOption(inputDesc, ApiRawBody)
+	if methodName != consts.HttpMethodGet && methodName != consts.HttpMethodHead && methodName != consts.HttpMethodDelete {
+		bodySchema := g.getSchemaByOption(inputDesc, consts.ApiBody)
+		formSchema := g.getSchemaByOption(inputDesc, consts.ApiForm)
+		rawBodySchema := g.getSchemaByOption(inputDesc, consts.ApiRawBody)
 
 		var additionalProperties []*openapi.NamedMediaType
 		if len(bodySchema.Properties.AdditionalProperties) > 0 {
 			additionalProperties = append(additionalProperties, &openapi.NamedMediaType{
-				Name: ContentTypeJSON,
+				Name: consts.ContentTypeJSON,
 				Value: &openapi.MediaType{
 					Schema: &openapi.SchemaOrReference{
 						Schema: bodySchema,
@@ -427,7 +437,7 @@ func (g *OpenAPIGenerator) buildOperation(
 
 		if len(formSchema.Properties.AdditionalProperties) > 0 {
 			additionalProperties = append(additionalProperties, &openapi.NamedMediaType{
-				Name: ContentTypeFormMultipart,
+				Name: consts.ContentTypeFormMultipart,
 				Value: &openapi.MediaType{
 					Schema: &openapi.SchemaOrReference{
 						Schema: formSchema,
@@ -436,7 +446,7 @@ func (g *OpenAPIGenerator) buildOperation(
 			})
 
 			additionalProperties = append(additionalProperties, &openapi.NamedMediaType{
-				Name: ContentTypeFormURLEncoded,
+				Name: consts.ContentTypeFormURLEncoded,
 				Value: &openapi.MediaType{
 					Schema: &openapi.SchemaOrReference{
 						Schema: formSchema,
@@ -447,7 +457,7 @@ func (g *OpenAPIGenerator) buildOperation(
 
 		if len(rawBodySchema.Properties.AdditionalProperties) > 0 {
 			additionalProperties = append(additionalProperties, &openapi.NamedMediaType{
-				Name: ContentTypeRawBody,
+				Name: consts.ContentTypeRawBody,
 				Value: &openapi.MediaType{
 					Schema: &openapi.SchemaOrReference{
 						Schema: rawBodySchema,
@@ -473,7 +483,7 @@ func (g *OpenAPIGenerator) buildOperation(
 	desc := g.filterCommentString(outputDesc.Comments)
 
 	if desc == "" {
-		desc = DefaultResponseDesc
+		desc = consts.DefaultResponseDesc
 	}
 
 	var headerOrEmpty *openapi.HeadersOrReferences
@@ -519,8 +529,8 @@ func (g *OpenAPIGenerator) buildOperation(
 	}
 
 	if host != "" {
-		if !strings.HasPrefix(host, URLDefaultPrefixHTTP) && !strings.HasPrefix(host, URLDefaultPrefixHTTPS) {
-			host = URLDefaultPrefixHTTP + host
+		if !strings.HasPrefix(host, consts.URLDefaultPrefixHTTP) && !strings.HasPrefix(host, consts.URLDefaultPrefixHTTPS) {
+			host = consts.URLDefaultPrefixHTTP + host
 		}
 		op.Servers = append(op.Servers, &openapi.Server{URL: host})
 	}
@@ -531,17 +541,17 @@ func (g *OpenAPIGenerator) buildOperation(
 func (g *OpenAPIGenerator) getDocumentAnnotationInWhichServiceOrStruct() (string, string) {
 	var ret string
 	for _, s := range g.ast.Services {
-		v := s.Annotations.Get(OpenapiDocument)
+		v := s.Annotations.Get(consts.OpenapiDocument)
 		if len(v) > 0 {
 			ret = s.GetName()
-			return DocumentOptionServiceType, ret
+			return consts.DocumentOptionServiceType, ret
 		}
 	}
 	for _, s := range g.ast.Structs {
-		v := s.Annotations.Get(OpenapiDocument)
+		v := s.Annotations.Get(consts.OpenapiDocument)
 		if len(v) > 0 {
 			ret = s.GetName()
-			return DocumentOptionStructType, ret
+			return consts.DocumentOptionStructType, ret
 		}
 	}
 	return "", ret
@@ -551,10 +561,10 @@ func (g *OpenAPIGenerator) getResponseForStruct(d *openapi.Document, desc *thrif
 	headers := &openapi.HeadersOrReferences{AdditionalProperties: []*openapi.NamedHeaderOrReference{}}
 
 	for _, field := range desc.Fields {
-		if len(field.Annotations[ApiHeader]) < 1 {
+		if len(field.Annotations[consts.ApiHeader]) < 1 {
 			continue
 		}
-		if ext := field.Annotations[ApiHeader][0]; ext != "" {
+		if ext := field.Annotations[consts.ApiHeader][0]; ext != "" {
 			headerName := ext
 			header := &openapi.Header{
 				Description: g.filterCommentString(field.Comments),
@@ -570,19 +580,19 @@ func (g *OpenAPIGenerator) getResponseForStruct(d *openapi.Document, desc *thrif
 	}
 
 	// Get api.body and api.raw_body option schema
-	bodySchema := g.getSchemaByOption(desc, ApiBody)
-	rawBodySchema := g.getSchemaByOption(desc, ApiRawBody)
+	bodySchema := g.getSchemaByOption(desc, consts.ApiBody)
+	rawBodySchema := g.getSchemaByOption(desc, consts.ApiRawBody)
 	var additionalProperties []*openapi.NamedMediaType
 
 	if len(bodySchema.Properties.AdditionalProperties) > 0 {
 		refSchema := &openapi.NamedSchemaOrReference{
-			Name:  desc.GetName() + ComponentSchemaSuffixBody,
+			Name:  desc.GetName() + consts.ComponentSchemaSuffixBody,
 			Value: &openapi.SchemaOrReference{Schema: bodySchema},
 		}
-		ref := ComponentSchemaPrefix + desc.GetName() + ComponentSchemaSuffixBody
+		ref := consts.ComponentSchemaPrefix + desc.GetName() + consts.ComponentSchemaSuffixBody
 		g.addSchemaToDocument(d, refSchema)
 		additionalProperties = append(additionalProperties, &openapi.NamedMediaType{
-			Name: ContentTypeJSON,
+			Name: consts.ContentTypeJSON,
 			Value: &openapi.MediaType{
 				Schema: &openapi.SchemaOrReference{
 					Reference: &openapi.Reference{Xref: ref},
@@ -593,13 +603,13 @@ func (g *OpenAPIGenerator) getResponseForStruct(d *openapi.Document, desc *thrif
 
 	if len(rawBodySchema.Properties.AdditionalProperties) > 0 {
 		refSchema := &openapi.NamedSchemaOrReference{
-			Name:  desc.GetName() + ComponentSchemaSuffixRawBody,
+			Name:  desc.GetName() + consts.ComponentSchemaSuffixRawBody,
 			Value: &openapi.SchemaOrReference{Schema: rawBodySchema},
 		}
-		ref := ComponentSchemaPrefix + desc.GetName() + ComponentSchemaSuffixRawBody
+		ref := consts.ComponentSchemaPrefix + desc.GetName() + consts.ComponentSchemaSuffixRawBody
 		g.addSchemaToDocument(d, refSchema)
 		additionalProperties = append(additionalProperties, &openapi.NamedMediaType{
-			Name: ContentTypeRawBody,
+			Name: consts.ContentTypeRawBody,
 			Value: &openapi.MediaType{
 				Schema: &openapi.SchemaOrReference{
 					Reference: &openapi.Reference{Xref: ref},
@@ -612,7 +622,7 @@ func (g *OpenAPIGenerator) getResponseForStruct(d *openapi.Document, desc *thrif
 		AdditionalProperties: additionalProperties,
 	}
 
-	return StatusOK, headers, content
+	return consts.StatusOK, headers, content
 }
 
 func (g *OpenAPIGenerator) getSchemaByOption(inputDesc *thrift_reflection.StructDescriptor, option string) *openapi.Schema {
@@ -622,7 +632,7 @@ func (g *OpenAPIGenerator) getSchemaByOption(inputDesc *thrift_reflection.Struct
 
 	var allRequired []string
 	var extSchema *openapi.Schema
-	err := utils.ParseStructOption(inputDesc, OpenapiSchema, &extSchema)
+	err := utils.ParseStructOption(inputDesc, consts.OpenapiSchema, &extSchema)
 	if err != nil {
 		logs.Errorf("Error parsing struct option: %s", err)
 	}
@@ -640,7 +650,7 @@ func (g *OpenAPIGenerator) getSchemaByOption(inputDesc *thrift_reflection.Struct
 				extName = field.Annotations[option][0]
 			}
 
-			if utils.Contains(allRequired, extName) {
+			if common.Contains(allRequired, extName) {
 				required = append(required, extName)
 			}
 
@@ -654,11 +664,11 @@ func (g *OpenAPIGenerator) getSchemaByOption(inputDesc *thrift_reflection.Struct
 			if fieldSchema.IsSetSchema() {
 				fieldSchema.Schema.Description = description
 				newFieldSchema := &openapi.Schema{}
-				err := utils.ParseFieldOption(field, OpenapiProperty, &newFieldSchema)
+				err := utils.ParseFieldOption(field, consts.OpenapiProperty, &newFieldSchema)
 				if err != nil {
 					logs.Errorf("Error parsing field option: %s", err)
 				}
-				utils.MergeStructs(fieldSchema.Schema, newFieldSchema)
+				common.MergeStructs(fieldSchema.Schema, newFieldSchema)
 			}
 
 			definitionProperties.AdditionalProperties = append(
@@ -672,25 +682,16 @@ func (g *OpenAPIGenerator) getSchemaByOption(inputDesc *thrift_reflection.Struct
 	}
 
 	schema := &openapi.Schema{
-		Type:       SchemaObjectType,
+		Type:       consts.SchemaObjectType,
 		Properties: definitionProperties,
 	}
 
 	if extSchema != nil {
-		utils.MergeStructs(schema, extSchema)
+		common.MergeStructs(schema, extSchema)
 	}
 
 	schema.Required = required
 	return schema
-}
-
-func (g *OpenAPIGenerator) getStructLikeByName(name string) *parser.StructLike {
-	for _, s := range g.ast.GetStructLikes() {
-		if s.GetName() == name {
-			return s
-		}
-	}
-	return nil
 }
 
 // filterCommentString removes linter rules from comments.
@@ -735,25 +736,63 @@ func (g *OpenAPIGenerator) filterCommentString(str string) string {
 	return strings.Join(comments, "\n")
 }
 
-func (g *OpenAPIGenerator) addSchemasForStructsToDocument(d *openapi.Document, structs []*parser.StructLike) {
-	// Handle nested structs
+func (g *OpenAPIGenerator) addSchemasForStructsToDocument(d *openapi.Document, structs []*thrift_reflection.StructDescriptor) {
 	for _, s := range structs {
-		var sls []*parser.StructLike
+		var sls []*thrift_reflection.StructDescriptor
 		for _, f := range s.GetFields() {
-			if f.GetType().GetCategory().IsStruct() {
-				sls = append(sls, g.getStructLikeByName(f.GetType().GetName()))
+			fieldType := f.GetType()
+			if fieldType == nil {
+				logs.Errorf("Warning: field type is nil for field: %s\n", f.GetName())
+				continue
+			}
+			if fieldType.IsStruct() {
+				structDesc := g.fileDesc.GetStructDescriptor(fieldType.GetName())
+				if structDesc != nil {
+					sls = append(sls, structDesc)
+				} else {
+					parts := semantic.SplitType(fieldType.GetName())
+					switch len(parts) {
+					case 2:
+						refAst := g.fileDesc.GetIncludeFD(parts[0])
+						if refAst != nil {
+							for _, s := range refAst.Structs {
+								if s.GetName() == parts[1] {
+									sls = append(sls, s)
+								}
+							}
+						} else {
+							logs.Errorf("Error could not find struct-like type for field: %s\n", fieldType.GetName())
+						}
+					}
+				}
 			}
 		}
-		g.addSchemasForStructsToDocument(d, sls)
+		if len(sls) > 0 {
+			g.addSchemasForStructsToDocument(d, sls)
+		}
 
 		schemaName := s.GetName()
 		// Only generate this if we need it and haven't already generated it.
-		if !utils.Contains(g.requiredSchemas, schemaName) ||
-			utils.Contains(g.generatedSchemas, schemaName) {
+		if !common.Contains(g.requiredSchemas, schemaName) ||
+			common.Contains(g.generatedSchemas, schemaName) {
 			continue
 		}
 
 		structDesc := g.fileDesc.GetStructDescriptor(s.GetName())
+		if structDesc == nil {
+			for k := range g.fileDesc.Includes {
+				inludeFD := g.fileDesc.GetIncludeFD(k)
+				if inludeFD == nil {
+					continue
+				}
+				for _, v := range inludeFD.Structs {
+					if v.GetName() == s.GetName() {
+						structDesc = v
+						break
+					}
+				}
+			}
+		}
 
 		// Get the description from the comments.
 		messageDescription := g.filterCommentString(structDesc.Comments)
@@ -774,43 +813,43 @@ func (g *OpenAPIGenerator) addSchemasForStructsToDocument(d *openapi.Document, s
 			if fieldSchema.IsSetSchema() {
 				fieldSchema.Schema.Description = description
 				newFieldSchema := &openapi.Schema{}
-				err := utils.ParseFieldOption(field, OpenapiProperty, &newFieldSchema)
+				err := utils.ParseFieldOption(field, consts.OpenapiProperty, &newFieldSchema)
 				if err != nil {
 					logs.Errorf("Error parsing field option: %s", err)
 				}
-				utils.MergeStructs(fieldSchema.Schema, newFieldSchema)
-			}
-
-			extName := field.GetName()
-			options := []string{ApiHeader, ApiBody, ApiForm, ApiRawBody}
-			for _, option := range options {
-				if field.Annotations[option] != nil && field.Annotations[option][0] != "" {
-					extName = field.Annotations[option][0]
+				err = common.MergeStructs(fieldSchema.Schema, newFieldSchema)
+				if err != nil {
+					logs.Errorf("Error merging field option: %s", err)
 				}
 			}
+
+			fName := field.GetName()
 
 			definitionProperties.AdditionalProperties = append(
 				definitionProperties.AdditionalProperties,
 				&openapi.NamedSchemaOrReference{
-					Name:  extName,
+					Name:  fName,
 					Value: fieldSchema,
 				},
 			)
 		}
 
 		schema := &openapi.Schema{
-			Type:        SchemaObjectType,
+			Type:        consts.SchemaObjectType,
 			Description: messageDescription,
 			Properties:  definitionProperties,
 		}
 
 		var extSchema *openapi.Schema
-		err := utils.ParseStructOption(structDesc, OpenapiSchema, &extSchema)
+		err := utils.ParseStructOption(structDesc, consts.OpenapiSchema, &extSchema)
 		if err != nil {
 			logs.Errorf("Error parsing struct option: %s", err)
 		}
 		if extSchema != nil {
-			utils.MergeStructs(schema, extSchema)
+			err = common.MergeStructs(schema, extSchema)
+			if err != nil {
+				logs.Errorf("Error merging struct option: %s", err)
+			}
 		}
 
 		// Add the schema to the components.schema list.
@@ -825,7 +864,7 @@ func (g *OpenAPIGenerator) addSchemasForStructsToDocument(d *openapi.Document, s
 
 // addSchemaToDocument adds the schema to the document if required
 func (g *OpenAPIGenerator) addSchemaToDocument(d *openapi.Document, schema *openapi.NamedSchemaOrReference) {
-	if utils.Contains(g.generatedSchemas, schema.Name) {
+	if common.Contains(g.generatedSchemas, schema.Name) {
 		return
 	}
 	g.generatedSchemas = append(g.generatedSchemas, schema.Name)
@@ -847,29 +886,29 @@ func (g *OpenAPIGenerator) addOperationToDocument(d *openapi.Document, op *opena
 	}
 	// Set the operation on the specified method.
 	switch methodName {
-	case HttpMethodGet:
+	case consts.HttpMethodGet:
 		selectedPathItem.Value.Get = op
-	case HttpMethodPost:
+	case consts.HttpMethodPost:
 		selectedPathItem.Value.Post = op
-	case HttpMethodPut:
+	case consts.HttpMethodPut:
 		selectedPathItem.Value.Put = op
-	case HttpMethodDelete:
+	case consts.HttpMethodDelete:
 		selectedPathItem.Value.Delete = op
-	case HttpMethodPatch:
+	case consts.HttpMethodPatch:
 		selectedPathItem.Value.Patch = op
-	case HttpMethodOptions:
+	case consts.HttpMethodOptions:
 		selectedPathItem.Value.Options = op
-	case HttpMethodHead:
+	case consts.HttpMethodHead:
 		selectedPathItem.Value.Head = op
 	}
 }
 
 func (g *OpenAPIGenerator) schemaReferenceForMessage(message *thrift_reflection.StructDescriptor) string {
 	schemaName := message.GetName()
-	if !utils.Contains(g.requiredSchemas, schemaName) {
+	if !common.Contains(g.requiredSchemas, schemaName) {
 		g.requiredSchemas = append(g.requiredSchemas, schemaName)
 	}
-	return ComponentSchemaPrefix + schemaName
+	return consts.ComponentSchemaPrefix + schemaName
 }
 
 func (g *OpenAPIGenerator) schemaOrReferenceForField(fieldType *thrift_reflection.TypeDescriptor) *openapi.SchemaOrReference {
@@ -891,7 +930,7 @@ func (g *OpenAPIGenerator) schemaOrReferenceForField(fieldType *thrift_reflectio
 		valueSchema := g.schemaOrReferenceForField(fieldType.GetValueType())
 		kindSchema = &openapi.SchemaOrReference{
 			Schema: &openapi.Schema{
-				Type: SchemaObjectType,
+				Type: consts.SchemaObjectType,
 				AdditionalProperties: &openapi.AdditionalPropertiesItem{
 					SchemaOrReference: valueSchema,
 				},
@@ -943,79 +982,13 @@ func (g *OpenAPIGenerator) schemaOrReferenceForField(fieldType *thrift_reflectio
 	return kindSchema
 }
 
-const (
-	ApiGet           = "api.get"
-	ApiPost          = "api.post"
-	ApiPut           = "api.put"
-	ApiPatch         = "api.patch"
-	ApiDelete        = "api.delete"
-	ApiOptions       = "api.options"
-	ApiHEAD          = "api.head"
-	ApiAny           = "api.any"
-	ApiQuery         = "api.query"
-	ApiForm          = "api.form"
-	ApiPath          = "api.path"
-	ApiHeader        = "api.header"
-	ApiCookie        = "api.cookie"
-	ApiBody          = "api.body"
-	ApiRawBody       = "api.raw_body"
-	ApiBaseDomain    = "api.base_domain"
-	ApiBaseURL       = "api.baseurl"
-	OpenapiOperation = "openapi.operation"
-	OpenapiProperty  = "openapi.property"
-	OpenapiSchema    = "openapi.schema"
-	OpenapiParameter = "openapi.parameter"
-	OpenapiDocument  = "openapi.document"
-)
-
 var HttpMethodAnnotations = map[string]string{
-	ApiGet:     "GET",
-	ApiPost:    "POST",
-	ApiPut:     "PUT",
-	ApiPatch:   "PATCH",
-	ApiDelete:  "DELETE",
-	ApiOptions: "OPTIONS",
-	ApiHEAD:    "HEAD",
-	ApiAny:     "ANY",
+	consts.ApiGet:     "GET",
+	consts.ApiPost:    "POST",
+	consts.ApiPut:     "PUT",
+	consts.ApiPatch:   "PATCH",
+	consts.ApiDelete:  "DELETE",
+	consts.ApiOptions: "OPTIONS",
+	consts.ApiHEAD:    "HEAD",
+	consts.ApiAny:     "ANY",
 }
-
-const (
-	HttpMethodGet     = "GET"
-	HttpMethodPost    = "POST"
-	HttpMethodPut     = "PUT"
-	HttpMethodPatch   = "PATCH"
-	HttpMethodDelete  = "DELETE"
-	HttpMethodOptions = "OPTIONS"
-	HttpMethodHead    = "HEAD"
-)
-
-const (
-	OpenAPIVersion        = "3.0.3"
-	DefaultOutputFile     = "openapi.yaml"
-	DefaultInfoTitle      = "API generated by thrift-gen-http-swagger"
-	DefaultInfoDesc       = "API description"
-	DefaultInfoVersion    = "0.0.1"
-	infoURL               = "https://github.com/hertz-contrib/swagger-generate/thrift-gen-http-swagger"
-	URLDefaultPrefixHTTP  = "http://"
-	URLDefaultPrefixHTTPS = "https://"
-
-	DefaultResponseDesc          = "Successful response"
-	StatusOK                     = "200"
-	SchemaObjectType             = "object"
-	ComponentSchemaPrefix        = "#/components/schemas/"
-	ComponentSchemaSuffixBody    = "Body"
-	ComponentSchemaSuffixRawBody = "RawBody"
-
-	ContentTypeJSON           = "application/json"
-	ContentTypeFormMultipart  = "multipart/form-data"
-	ContentTypeFormURLEncoded = "application/x-www-form-urlencoded"
-	ContentTypeRawBody        = "text/plain"
-
-	ParameterInQuery  = "query"
-	ParameterInHeader = "header"
-	ParameterInPath   = "path"
-	ParameterInCookie = "cookie"
-
-	DocumentOptionServiceType = "service"
-	DocumentOptionStructType  = "struct"
-)

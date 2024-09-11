@@ -20,6 +20,8 @@ import (
 	"flag"
 	"os"
 
+	"github.com/cloudwego/hertz/cmd/hz/util/logs"
+
 	"github.com/hertz-contrib/swagger-generate/thrift-gen-rpc-swagger/plugins"
 )
 
@@ -30,7 +32,7 @@ func main() {
 	f.BoolVar(&queryVersion, "version", false, "Show the version of thrift-gen-rpc-swagger")
 
 	if err := f.Parse(os.Args[1:]); err != nil {
-		println(err)
+		logs.Error("Failed to parse flags: %v", err)
 		os.Exit(2)
 	}
 

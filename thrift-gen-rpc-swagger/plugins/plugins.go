@@ -17,11 +17,11 @@
 package plugins
 
 import (
-	"fmt"
+	"errors"
 	"io"
-	"log"
 	"os"
 
+	"github.com/cloudwego/hertz/cmd/hz/util/logs"
 	"github.com/cloudwego/thriftgo/plugin"
 	"github.com/hertz-contrib/swagger-generate/thrift-gen-rpc-swagger/args"
 	"github.com/hertz-contrib/swagger-generate/thrift-gen-rpc-swagger/generator"
@@ -30,18 +30,18 @@ import (
 func Run() int {
 	data, err := io.ReadAll(os.Stdin)
 	if err != nil {
-		println("Failed to get input:", err.Error())
+		logs.Errorf("Failed to get input: %v", err.Error())
 		os.Exit(1)
 	}
 
 	req, err := plugin.UnmarshalRequest(data)
 	if err != nil {
-		println("Failed to unmarshal request:", err.Error())
+		logs.Errorf("Failed to unmarshal request: %v", err.Error())
 		os.Exit(1)
 	}
 
 	if err := handleRequest(req); err != nil {
-		println("Failed to handle request:", err.Error())
+		logs.Errorf("Failed to handle request: %v", err.Error())
 		os.Exit(1)
 	}
 
@@ -51,12 +51,11 @@ func Run() int {
 
 func handleRequest(req *plugin.Request) (err error) {
 	if req == nil {
-		fmt.Fprintf(os.Stderr, "unexpected nil request")
+		return errors.New("request is nil")
 	}
 
 	args := new(args.Arguments)
-	if err := args.Unpack(req.PluginParameters); err != nil {
-		log.Printf("[Error]: unpack args failed: %s", err.Error())
+	if err = args.Unpack(req.PluginParameters); err != nil {
 		return err
 	}
 
@@ -65,13 +64,19 @@ func handleRequest(req *plugin.Request) (err error) {
 	og := generator.NewOpenAPIGenerator(ast)
 	openapiContent := og.BuildDocument(args)
 
-	sg := generator.NewServerGenerator(ast, args)
-	serverContent := sg.Generate()
+	sg, err := generator.NewServerGenerator(ast, args)
+	if err != nil {
+		return err
+	}
+	serverContent, err := sg.Generate()
+	if err != nil {
+		return err
+	}
 
 	res := &plugin.Response{
 		Contents: append(openapiContent, serverContent...),
 	}
-	if err := handleResponse(res); err != nil {
+	if err = handleResponse(res); err != nil {
 		return err
 	}
 

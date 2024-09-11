@@ -10,7 +10,7 @@ This is a plugin for generating RPC Swagger documentation and providing Swagger-
 # Install from the official repository
 
 git clone https://github.com/hertz-contrib/swagger-generate
-cd thrift-gen-rpc-swagger
+cd swagger-generate
 go install
 
 # Direct installation
@@ -22,54 +22,55 @@ thrift-gen-rpc-swagger --version
 
 ## Usage
 
-### Generate Swagger Documentation
+### Generating Swagger Documentation
 
 ```sh
-thriftgo -g go -p rpc-swagger:OutputDir=./output,HertzAddr=127.0.0.1:8080,KitexAddr=127.0.0.1:8888 hello.thrift
+thriftgo -g go -p rpc-swagger hello.thrift
 ```
 
-### Start the Swagger-UI Service
+### Add the option during Kitex Server initialization
 
 ```sh
-go run ./output/swagger.go
+svr := api.NewServer(new(HelloImpl), server.WithTransHandlerFactory(&swagger.MixTransHandlerFactory{}))
 ```
 
-### Access Swagger-UI (Kitex service needs to be running for debugging)
+### Access Swagger UI (Kitex service needs to be running for debugging)
 
 ```sh
-http://127.0.0.1:8080/swagger/index.html
+http://127.0.0.1:8888/swagger/index.html
 ```
 
 ## Usage Instructions
 
-### Debugging Instructions
-1. The plugin generates Swagger documentation and also creates an HTTP (Hertz) service to provide access and debugging of the Swagger documentation.
-2. To access the Swagger documentation, start `swagger.go`. The HTTP service address can be specified via the `HertzAddr` parameter, which defaults to 127.0.0.1:8080. Ensure that the `server` URL in the Swagger documentation matches `HertzAddr` for debugging purposes. After starting, access `/swagger/index.html`.
-3. To debug the Swagger documentation, the Kitex service must also be running. The `KitexAddr` parameter specifies the Kitex service address, which defaults to 127.0.0.1:8888. Ensure that this matches the actual Kitex service address.
+### Debugging Notes
+1. The plugin generates Swagger documentation and also sets up an HTTP (Hertz) service to provide access to the Swagger documentation and debugging.
+2. The HTTP service defaults to the same port as the RPC service, implemented via protocol sniffing.
+3. Accessing the Swagger documentation and debugging the RPC service requires adding `"server.WithTransHandlerFactory(&swagger.MixTransHandlerFactory{})"` to the Kitex Server initialization.
 
-### Generation Instructions
-1. All RPC methods will be converted to HTTP POST methods. The request parameters correspond to the request body, with the content type being `application/json`. The response is handled similarly.
-2. Annotations can be used to supplement information in the Swagger documentation, such as `openapi.operation`, `openapi.property`, `openapi.schema`, `api.base_domain`, and `api.baseurl`.
-3. To use the `openapi.operation`, `openapi.property`, `openapi.schema`, and `openapi.document` annotations, you need to import `openapi.thrift`.
+### Generation Notes
+1. All RPC methods are converted into HTTP POST methods, with request parameters corresponding to the Request body in `application/json` format, and the same for the return value.
+2. Swagger documentation can be supplemented with annotations such as `openapi.operation`, `openapi.property`, `openapi.schema`, `api.base_domain`, and `api.baseurl`.
+3. To use annotations like `openapi.operation`, `openapi.property`, `openapi.schema`, and `openapi.document`, you need to import `openapi.thrift`.
+4. Custom HTTP services are supported, and custom parts will not be overwritten during updates.
 
-### Metadata Passing
-1. Metadata passing is supported. The plugin generates a `theader` query parameter for each method by default, used for metadata transmission. The format should be in JSON, e.g., `{"p_k":"p_v","k":"v"}`.
-2. For single-hop metadata passthrough, the format is `"key":"value"`.
-3. For continuous metadata passthrough, the format is `"p_key":"value"`, with the `p_` prefix added.
-4. Reverse metadata passthrough is supported. If set, metadata can be viewed in the response, attached in the format `"key":"value"`.
-5. For more information on using metadata, please refer to [Metainfo](https://www.cloudwego.io/en/docs/kitex/tutorials/advanced-feature/metainfo/).
+### Metadata Transmission
+1. Metadata transmission is supported. By default, the plugin generates a `ttheader` query parameter for each method to transmit metadata, which should be in JSON format, e.g., `{"p_k":"p_v","k":"v"}`.
+2. Single-hop metadata transmission format is `"key":"value"`.
+3. Continuous metadata transmission format is `"p_key":"value"`, with a prefix `p_`.
+4. Reverse metadata transmission is supported; if enabled, metadata can be viewed in the return value, appended to the response in `"key":"value"` format.
+5. For more information on using metadata, refer to [Metainfo](https://www.cloudwego.io/zh/docs/kitex/tutorials/advanced-feature/metainfo/).
 
 ## Supported Annotations
 
-| Annotation          | Component | Description                                                                                            |  
-|---------------------|-----------|--------------------------------------------------------------------------------------------------------|
-| `openapi.operation` | Method    | Used to supplement the `operation` of a `pathItem`                                                     |
-| `openapi.property`  | Field     | Used to supplement the `property` of a `schema`                                                        |
-| `openapi.schema`    | Struct    | Used to supplement the `schema` of a `requestBody` and `response`                                      |
-| `openapi.document`  | Service   | Used to supplement the Swagger document; can be added in any service                                   |
-| `api.base_domain`   | Service   | Corresponds to the `url` of the `server`, used to specify the service's URL                            |
-| `api.baseurl`       | Method    | Corresponds to the `url` of the `server` for a `pathItem`, used to specify the URL for a single method |
+| Annotation          | Component | Description                                                                              |
+|---------------------|-----------|------------------------------------------------------------------------------------------|
+| `openapi.operation` | Method    | Supplements the `operation` of `pathItem`                                                |
+| `openapi.property`  | Field     | Supplements the `property` of `schema`                                                   |
+| `openapi.schema`    | Struct    | Supplements the `schema` for `requestBody` and `response`                                |
+| `openapi.document`  | Service   | Supplements Swagger documentation; add this annotation to any service                    |
+| `api.base_domain`   | Service   | Corresponds to `server`'s `url`, specifies the URL for the service                       |
+| `api.baseurl`       | Method    | Corresponds to `pathItem`'s `server`'s `url`, specifies the URL for an individual method |
 
-## Additional Information
+## More Information
 
-For more usage details, please refer to the [example](example/hello.thrift).
+For more usage instructions, refer to [Example](example/hello.thrift).

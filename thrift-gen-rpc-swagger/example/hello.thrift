@@ -67,7 +67,7 @@ service HelloService1 {
 
     HelloResp BodyMethod(1: BodyReq req) ()
 }(
-    api.base_domain = "127.0.0.1:8080",
+    api.base_domain = "127.0.0.1:8888",
     openapi.document = '{
        info: {
           title: "example swagger doc",

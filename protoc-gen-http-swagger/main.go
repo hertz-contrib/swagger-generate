@@ -38,14 +38,13 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/hertz-contrib/swagger-generate/common/consts"
 	"github.com/hertz-contrib/swagger-generate/protoc-gen-http-swagger/generator"
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/types/pluginpb"
 )
 
 var flags flag.FlagSet
-
-const DefaultOutputFile = "openapi.yaml"
 
 func main() {
 	conf := generator.Configuration{
@@ -70,7 +69,7 @@ func main() {
 				if !file.Generate {
 					continue
 				}
-				outfileName := strings.TrimSuffix(file.Desc.Path(), filepath.Ext(file.Desc.Path())) + "." + DefaultOutputFile
+				outfileName := strings.TrimSuffix(file.Desc.Path(), filepath.Ext(file.Desc.Path())) + "." + consts.DefaultOutputYamlFile
 				outputFile := plugin.NewGeneratedFile(outfileName, "")
 				gen := generator.NewOpenAPIGenerator(plugin, conf, []*protogen.File{file})
 				if err := gen.Run(outputFile); err != nil {
@@ -78,8 +77,19 @@ func main() {
 				}
 			}
 		} else {
-			outputFile := plugin.NewGeneratedFile(DefaultOutputFile, "")
-			return generator.NewOpenAPIGenerator(plugin, conf, plugin.Files).Run(outputFile)
+			outputFile := plugin.NewGeneratedFile(consts.DefaultOutputYamlFile, "")
+			gen := generator.NewOpenAPIGenerator(plugin, conf, plugin.Files)
+			if err := gen.Run(outputFile); err != nil {
+				return err
+			}
+		}
+		outputFile := plugin.NewGeneratedFile("swagger.go", "")
+		gen, err := generator.NewServerGenerator(plugin.Files)
+		if err != nil {
+			return err
+		}
+		if err = gen.Generate(outputFile); err != nil {
+			return err
 		}
 		return nil
 	})

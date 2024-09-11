@@ -94,9 +94,13 @@ thrift-gen-http-swagger --version
 ## 使用
 
 ```sh
+thriftgo -g go -p http-swagger hello.thrift
+```
 
-thriftgo -g go -p http-swagger:OutputDir={swagger文档输出目录} {idl}.thrift
+### 在 Hertz Server 中绑定 swagger 服务开启 swagger-ui
 
+```sh
+swagger.BindSwagger(r)
 ```
 
 ## 更多信息

@@ -37,8 +37,10 @@ import (
 	"log"
 	"strings"
 
+	common "github.com/hertz-contrib/swagger-generate/common/utils"
+	"github.com/hertz-contrib/swagger-generate/idl/protobuf/openapi"
 	wk "github.com/hertz-contrib/swagger-generate/protoc-gen-http-swagger/generator/wellknown"
-	"github.com/hertz-contrib/swagger-generate/protoc-gen-http-swagger/protobuf/openapi"
+	"github.com/hertz-contrib/swagger-generate/protoc-gen-http-swagger/utils"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
@@ -116,7 +118,7 @@ func (r *OpenAPIReflector) fullMessageTypeName(message protoreflect.MessageDescr
 
 func (r *OpenAPIReflector) schemaReferenceForMessage(message protoreflect.MessageDescriptor) string {
 	schemaName := r.formatMessageName(message)
-	if !contains(r.requiredSchemas, schemaName) {
+	if !common.Contains(r.requiredSchemas, schemaName) {
 		r.requiredSchemas = append(r.requiredSchemas, schemaName)
 	}
 	return "#/components/schemas/" + schemaName
@@ -161,13 +163,13 @@ func (r *OpenAPIReflector) schemaOrReferenceForMessage(message protoreflect.Mess
 		return wk.NewBytesSchema()
 
 	case ".google.protobuf.Int32Value", ".google.protobuf.UInt32Value":
-		return wk.NewIntegerSchema(getValueKind(message))
+		return wk.NewIntegerSchema(utils.GetValueKind(message))
 
 	case ".google.protobuf.StringValue", ".google.protobuf.Int64Value", ".google.protobuf.UInt64Value":
 		return wk.NewStringSchema()
 
 	case ".google.protobuf.FloatValue", ".google.protobuf.DoubleValue":
-		return wk.NewNumberSchema(getValueKind(message))
+		return wk.NewNumberSchema(utils.GetValueKind(message))
 
 	default:
 		ref := r.schemaReferenceForMessage(message)

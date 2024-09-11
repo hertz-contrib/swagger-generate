@@ -96,6 +96,12 @@ protoc-gen-http-swagger --version
 protoc --http-swagger_out=doc -I idl hello.proto
 ```
 
+### Bind Swagger Service to Enable Swagger UI in Hertz Server
+
+```sh
+swagger.BindSwagger(r)
+```
+
 ## More info
 
 See [examples](example/idl/hello.proto)

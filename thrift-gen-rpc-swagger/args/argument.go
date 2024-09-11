@@ -19,7 +19,7 @@ package args
 import (
 	"fmt"
 
-	"github.com/hertz-contrib/swagger-generate/thrift-gen-rpc-swagger/utils"
+	"github.com/hertz-contrib/swagger-generate/common/utils"
 )
 
 type Arguments struct {

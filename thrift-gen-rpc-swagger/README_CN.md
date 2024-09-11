@@ -27,38 +27,39 @@ thrift-gen-rpc-swagger --version
 
 ```sh
 
-thriftgo -g go -p rpc-swagger:OutputDir=./output,HertzAddr=127.0.0.1:8080,KitexAddr=127.0.0.1:8888 hello.thrift
+thriftgo -g go -p rpc-swagger hello.thrift
 
 ```
-### 启动 swagger-ui 服务
+### 在 Kitex Server 初始化中添加 option
 
 ```sh
 
-go run ./output/swagger.go
+svr := api.NewServer(new(HelloImpl), server.WithTransHandlerFactory(&swagger.MixTransHandlerFactory{}))
 
 ```
 
-### 访问 swagger-ui (调试需启动Kitex服务)
+### 访问 swagger-ui (调试需启动 Kitex 服务)
 
 ```sh
 
-http://127.0.0.1:8080/swagger/index.html
+http://127.0.0.1:8888/swagger/index.html
 ```
 
 ## 使用说明
 
 ### 调试说明
 1. 插件会生成 swagger 文档，并且会生成一个 http (Hertz) 服务, 用于提供 swagger 文档的访问及调试。
-2. swagger 文档的访问需启动 swagger.go, http 服务的地址可以通过参数 `HertzAddr` 参数指定, 默认为 127.0.0.1:8080, 需要保持 swagger 文档中 `server` 的 url 与 `HertzAddr` 一致才可以调试, 启动后访问访问/swagger/index.html。
-3. swagger 文档的调试还需启动 Kitex 服务, `KitexAddr`用于指定 Kitex 服务的地址, 默认为 127.0.0.1:8888, 需要保持与实际的 Kitex 服务地址一致。
+2. http 服务默认和 rpc 服务在一个端口, 通过嗅探协议实现。
+3. swagger 文档的访问及 rpc 服务的调试需在 Kitex Server 初始化中加入 "server.WithTransHandlerFactory(&swagger.MixTransHandlerFactory{})"。
 
 ### 生成说明
 1. 所有的 rpc 方法会转换成 http 的 post 方法，请求参数对应 Request body, content 类型为 application/json 格式，返回值同上。
 2. 可通过注解来补充 swagger 文档的信息，如 `openapi.operation`, `openapi.property`, `openapi.schema`, `api.base_domain`, `api.baseurl`。
 3. 如需使用`openapi.operation`, `openapi.property`, `openapi.schema`, `openpai.document` 注解，需引用 openapi.thrift。
+4. 支持自定义 http 服务，自定义部分更新时不会被覆盖。
 
 ### 元信息传递
-1. 支持元信息传递, 插件默认为每个方法生成一个`theader`的查询参数, 用于传递元信息, 格式需满足 json 格式, 如{"p_k":"p_v","k":"v"}。
+1. 支持元信息传递, 插件默认为每个方法生成一个`ttheader`的查询参数, 用于传递元信息, 格式需满足 json 格式, 如{"p_k":"p_v","k":"v"}。
 2. 单跳透传元信息, 格式为 "key":"value"。
 3. 持续透传元信息, 格式为 "p_key":"value", 需添加前缀`p_`。
 4. 支持反向透传元信息, 若设置则可在返回值中查看到元信息, 返回通过"key":"value"的格式附加在响应中。
