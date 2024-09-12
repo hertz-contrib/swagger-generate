@@ -34,8 +34,6 @@
 package generator
 
 import (
-	"fmt"
-	"os"
 	"path/filepath"
 	"regexp"
 	"sort"
@@ -317,7 +315,6 @@ func (g *OpenAPIGenerator) buildOperation(
 			},
 		})
 	}
-	fmt.Fprintf(os.Stderr, "haha:", g.filterCommentString(inputDesc.Comments))
 
 	if len(additionalProperties) > 0 {
 		RequestBody = &openapi.RequestBodyOrReference{
