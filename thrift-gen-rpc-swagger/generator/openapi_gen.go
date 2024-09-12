@@ -34,6 +34,8 @@
 package generator
 
 import (
+	"fmt"
+	"os"
 	"path/filepath"
 	"regexp"
 	"sort"
@@ -52,23 +54,19 @@ import (
 )
 
 type OpenAPIGenerator struct {
-	fileDesc          *thrift_reflection.FileDescriptor
-	ast               *parser.Thrift
-	generatedSchemas  []string
-	requiredSchemas   []string
-	commentPattern    *regexp.Regexp
-	linterRulePattern *regexp.Regexp
+	fileDesc         *thrift_reflection.FileDescriptor
+	ast              *parser.Thrift
+	generatedSchemas []string
+	requiredSchemas  []string
 }
 
 // NewOpenAPIGenerator creates a new generator for a protoc plugin invocation.
 func NewOpenAPIGenerator(ast *parser.Thrift) *OpenAPIGenerator {
 	_, fileDesc := thrift_reflection.RegisterAST(ast)
 	return &OpenAPIGenerator{
-		fileDesc:          fileDesc,
-		ast:               ast,
-		generatedSchemas:  make([]string, 0),
-		commentPattern:    regexp.MustCompile(consts.CommentPatternRegexp),
-		linterRulePattern: regexp.MustCompile(consts.LinterRulePatternRegexp),
+		fileDesc:         fileDesc,
+		ast:              ast,
+		generatedSchemas: make([]string, 0),
 	}
 }
 
@@ -319,6 +317,7 @@ func (g *OpenAPIGenerator) buildOperation(
 			},
 		})
 	}
+	fmt.Fprintf(os.Stderr, "haha:", g.filterCommentString(inputDesc.Comments))
 
 	if len(additionalProperties) > 0 {
 		RequestBody = &openapi.RequestBodyOrReference{
@@ -504,23 +503,40 @@ func (g *OpenAPIGenerator) getSchemaByOption(inputDesc *thrift_reflection.Struct
 // filterCommentString removes linter rules from comments.
 func (g *OpenAPIGenerator) filterCommentString(str string) string {
 	var comments []string
-	matches := g.commentPattern.FindAllStringSubmatch(str, -1)
+	matches := regexp.MustCompile(consts.CommentPatternRegexp).FindAllStringSubmatch(str, -1)
 
 	for _, match := range matches {
-		var comment string
 		if match[1] != "" {
-			// One-line comment
-			comment = strings.TrimSpace(match[1])
+			// Handle one-line comments
+			comments = append(comments, strings.TrimSpace(match[1]))
 		} else if match[2] != "" {
-			// Multiline comment
+			// Handle multiline comments
 			multiLineComment := match[2]
 			lines := strings.Split(multiLineComment, "\n")
-			for i, line := range lines {
-				lines[i] = strings.TrimSpace(strings.TrimPrefix(strings.TrimSpace(line), "*"))
+
+			// Find the minimum indentation level (excluding empty lines)
+			minIndent := -1
+			for _, line := range lines {
+				trimmedLine := strings.TrimSpace(line)
+				if trimmedLine != "" {
+					lineIndent := len(line) - len(strings.TrimLeft(line, " "))
+					if minIndent == -1 || lineIndent < minIndent {
+						minIndent = lineIndent
+					}
+				}
 			}
-			comment = strings.Join(lines, "\n")
+
+			// Remove the minimum indentation and any leading '*' from each line
+			for i, line := range lines {
+				if minIndent > 0 && len(line) >= minIndent {
+					line = line[minIndent:]
+				}
+				lines[i] = strings.TrimPrefix(line, "*")
+			}
+
+			// Remove leading and trailing empty lines from the comment block
+			comments = append(comments, strings.TrimSpace(strings.Join(lines, "\n")))
 		}
-		comments = append(comments, comment)
 	}
 
 	return strings.Join(comments, "\n")
@@ -571,11 +587,11 @@ func (g *OpenAPIGenerator) addSchemasForStructsToDocument(d *openapi.Document, s
 		structDesc := g.fileDesc.GetStructDescriptor(s.GetName())
 		if structDesc == nil {
 			for k := range g.fileDesc.Includes {
-				inludeFD := g.fileDesc.GetIncludeFD(k)
-				if inludeFD == nil {
+				includeFD := g.fileDesc.GetIncludeFD(k)
+				if includeFD == nil {
 					continue
 				}
-				for _, v := range inludeFD.Structs {
+				for _, v := range includeFD.Structs {
 					if v.GetName() == s.GetName() {
 						structDesc = v
 						break

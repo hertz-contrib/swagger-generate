@@ -71,23 +71,21 @@ var (
 
 // OpenAPIGenerator holds internal state needed to generate an OpenAPIv3 document for a transcoded Protocol Buffer service.
 type OpenAPIGenerator struct {
-	conf              Configuration
-	plugin            *protogen.Plugin
-	inputFiles        []*protogen.File
-	reflect           *OpenAPIReflector
-	generatedSchemas  []string // Names of schemas that have already been generated.
-	linterRulePattern *regexp.Regexp
+	conf             Configuration
+	plugin           *protogen.Plugin
+	inputFiles       []*protogen.File
+	reflect          *OpenAPIReflector
+	generatedSchemas []string // Names of schemas that have already been generated.
 }
 
 // NewOpenAPIGenerator creates a new generator for a protoc plugin invocation.
 func NewOpenAPIGenerator(plugin *protogen.Plugin, conf Configuration, inputFiles []*protogen.File) *OpenAPIGenerator {
 	return &OpenAPIGenerator{
-		conf:              conf,
-		plugin:            plugin,
-		inputFiles:        inputFiles,
-		reflect:           NewOpenAPIReflector(conf),
-		generatedSchemas:  make([]string, 0),
-		linterRulePattern: regexp.MustCompile(consts.LinterRulePatternRegexp),
+		conf:             conf,
+		plugin:           plugin,
+		inputFiles:       inputFiles,
+		reflect:          NewOpenAPIReflector(conf),
+		generatedSchemas: make([]string, 0),
 	}
 }
 
@@ -253,7 +251,7 @@ func (g *OpenAPIGenerator) buildDocument() *openapi.Document {
 
 // filterCommentString removes linter rules from comments.
 func (g *OpenAPIGenerator) filterCommentString(c protogen.Comments) string {
-	comment := g.linterRulePattern.ReplaceAllString(string(c), "")
+	comment := regexp.MustCompile(consts.LinterRulePatternRegexp).ReplaceAllString(string(c), "")
 	return strings.TrimSpace(comment)
 }
 

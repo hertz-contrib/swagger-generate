@@ -102,6 +102,6 @@ const (
 	ParameterNameTTHeader = "ttheader"
 	ParameterDescription  = "metainfo for request"
 
-	CommentPatternRegexp    = `//\\s*(.*)|/\\*([\\s\\S]*?)\\*/`
-	LinterRulePatternRegexp = `\\(-- .* --\\)`
+	CommentPatternRegexp    = `//\s*(.*)|/\*([\s\S]*?)\*/`
+	LinterRulePatternRegexp = `\(-- .* --\)`
 )

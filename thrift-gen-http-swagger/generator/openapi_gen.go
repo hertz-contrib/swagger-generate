@@ -53,23 +53,19 @@ import (
 )
 
 type OpenAPIGenerator struct {
-	fileDesc          *thrift_reflection.FileDescriptor
-	ast               *parser.Thrift
-	generatedSchemas  []string
-	requiredSchemas   []string
-	commentPattern    *regexp.Regexp
-	linterRulePattern *regexp.Regexp
+	fileDesc         *thrift_reflection.FileDescriptor
+	ast              *parser.Thrift
+	generatedSchemas []string
+	requiredSchemas  []string
 }
 
 // NewOpenAPIGenerator creates a new generator for a protoc plugin invocation.
 func NewOpenAPIGenerator(ast *parser.Thrift) *OpenAPIGenerator {
 	_, fileDesc := thrift_reflection.RegisterAST(ast)
 	return &OpenAPIGenerator{
-		fileDesc:          fileDesc,
-		ast:               ast,
-		generatedSchemas:  make([]string, 0),
-		commentPattern:    regexp.MustCompile(consts.CommentPatternRegexp),
-		linterRulePattern: regexp.MustCompile(consts.LinterRulePatternRegexp),
+		fileDesc:         fileDesc,
+		ast:              ast,
+		generatedSchemas: make([]string, 0),
 	}
 }
 
@@ -290,6 +286,10 @@ func (g *OpenAPIGenerator) addPathsToDocument(d *openapi.Document, services []*p
 						logs.Errorf("Error parsing method option: %s", err)
 					}
 					common.MergeStructs(op, newOp)
+					err = common.MergeStructs(op, newOp)
+					if err != nil {
+						logs.Errorf("Error merging method option: %s", err)
+					}
 					g.addOperationToDocument(d, op, path2, methodName)
 				}
 			}
@@ -668,7 +668,10 @@ func (g *OpenAPIGenerator) getSchemaByOption(inputDesc *thrift_reflection.Struct
 				if err != nil {
 					logs.Errorf("Error parsing field option: %s", err)
 				}
-				common.MergeStructs(fieldSchema.Schema, newFieldSchema)
+				err = common.MergeStructs(fieldSchema.Schema, newFieldSchema)
+				if err != nil {
+					logs.Errorf("Error merging field option: %s", err)
+				}
 			}
 
 			definitionProperties.AdditionalProperties = append(
@@ -687,7 +690,10 @@ func (g *OpenAPIGenerator) getSchemaByOption(inputDesc *thrift_reflection.Struct
 	}
 
 	if extSchema != nil {
-		common.MergeStructs(schema, extSchema)
+		err := common.MergeStructs(schema, extSchema)
+		if err != nil {
+			logs.Errorf("Error merging struct option: %s", err)
+		}
 	}
 
 	schema.Required = required
@@ -697,7 +703,7 @@ func (g *OpenAPIGenerator) getSchemaByOption(inputDesc *thrift_reflection.Struct
 // filterCommentString removes linter rules from comments.
 func (g *OpenAPIGenerator) filterCommentString(str string) string {
 	var comments []string
-	matches := g.commentPattern.FindAllStringSubmatch(str, -1)
+	matches := regexp.MustCompile(consts.CommentPatternRegexp).FindAllStringSubmatch(str, -1)
 
 	for _, match := range matches {
 		if match[1] != "" {
@@ -781,11 +787,11 @@ func (g *OpenAPIGenerator) addSchemasForStructsToDocument(d *openapi.Document, s
 		structDesc := g.fileDesc.GetStructDescriptor(s.GetName())
 		if structDesc == nil {
 			for k := range g.fileDesc.Includes {
-				inludeFD := g.fileDesc.GetIncludeFD(k)
-				if inludeFD == nil {
+				includeFD := g.fileDesc.GetIncludeFD(k)
+				if includeFD == nil {
 					continue
 				}
-				for _, v := range inludeFD.Structs {
+				for _, v := range includeFD.Structs {
 					if v.GetName() == s.GetName() {
 						structDesc = v
 						break

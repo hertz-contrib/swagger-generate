@@ -1,6 +1,6 @@
 module github.com/hertz-contrib/swagger-generate/protoc-gen-http-swagger
 
-go 1.20
+go 1.18
 
 require (
 	github.com/cloudwego/hertz v0.9.3
