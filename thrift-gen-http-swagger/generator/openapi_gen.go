@@ -39,12 +39,11 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/hertz-contrib/swagger-generate/common/consts"
-
 	"github.com/cloudwego/hertz/cmd/hz/util/logs"
 	"github.com/cloudwego/thriftgo/parser"
 	"github.com/cloudwego/thriftgo/plugin"
 	"github.com/cloudwego/thriftgo/thrift_reflection"
+	"github.com/hertz-contrib/swagger-generate/common/consts"
 	common "github.com/hertz-contrib/swagger-generate/common/utils"
 	openapi "github.com/hertz-contrib/swagger-generate/idl/thrift"
 	"github.com/hertz-contrib/swagger-generate/thrift-gen-http-swagger/args"

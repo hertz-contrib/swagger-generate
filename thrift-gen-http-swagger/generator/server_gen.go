@@ -23,11 +23,10 @@ import (
 	"path/filepath"
 	"text/template"
 
-	"github.com/hertz-contrib/swagger-generate/common/consts"
-	"github.com/hertz-contrib/swagger-generate/common/tpl"
-
 	"github.com/cloudwego/thriftgo/parser"
 	"github.com/cloudwego/thriftgo/plugin"
+	"github.com/hertz-contrib/swagger-generate/common/consts"
+	"github.com/hertz-contrib/swagger-generate/common/tpl"
 	"github.com/hertz-contrib/swagger-generate/thrift-gen-http-swagger/args"
 )
 

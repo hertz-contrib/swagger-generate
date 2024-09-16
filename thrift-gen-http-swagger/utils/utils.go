@@ -19,6 +19,7 @@ package utils
 import (
 	"encoding/json"
 	"errors"
+
 	"github.com/cloudwego/thriftgo/extension/thrift_option"
 	"github.com/cloudwego/thriftgo/thrift_reflection"
 )
