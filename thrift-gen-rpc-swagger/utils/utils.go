@@ -19,10 +19,7 @@ package utils
 import (
 	"encoding/json"
 	"errors"
-	"strings"
-
 	"github.com/cloudwego/thriftgo/extension/thrift_option"
-	"github.com/cloudwego/thriftgo/parser"
 	"github.com/cloudwego/thriftgo/thrift_reflection"
 )
 
@@ -112,17 +109,4 @@ func ParseFieldOption(descriptor *thrift_reflection.FieldDescriptor, optionName 
 		return err
 	}
 	return err
-}
-
-func GetAnnotation(input parser.Annotations, target string) []string {
-	if len(input) == 0 {
-		return nil
-	}
-	for _, anno := range input {
-		if strings.ToLower(anno.Key) == target {
-			return anno.Values
-		}
-	}
-
-	return nil
 }

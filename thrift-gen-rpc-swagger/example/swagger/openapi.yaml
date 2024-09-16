@@ -4,6 +4,7 @@
 openapi: 3.0.3
 info:
     title: example swagger doc
+    description: HelloService1描述
     version: Version from annotation
 servers:
     - url: http://127.0.0.1:8888
@@ -20,6 +21,7 @@ paths:
                   schema:
                       type: object
             requestBody:
+                description: BodyReq
                 content:
                     application/json:
                         schema:
@@ -27,11 +29,13 @@ paths:
                             properties:
                                 BodyValue:
                                     type: string
+                                    description: 'field: body描述'
                                 QueryValue:
                                     type: string
+                                    description: 'field: query描述'
             responses:
                 "200":
-                    description: Successful response
+                    description: HelloResp
                     content:
                         application/json:
                             schema:
@@ -48,6 +52,7 @@ paths:
                   schema:
                       type: object
             requestBody:
+                description: PathReq
                 content:
                     application/json:
                         schema:
@@ -55,9 +60,10 @@ paths:
                             properties:
                                 PathValue:
                                     type: string
+                                    description: 'field: path描述'
             responses:
                 "200":
-                    description: Successful response
+                    description: HelloResp
                     content:
                         application/json:
                             schema:
@@ -74,6 +80,7 @@ paths:
                   schema:
                       type: object
             requestBody:
+                description: QueryReq
                 content:
                     application/json:
                         schema:
@@ -91,7 +98,7 @@ paths:
                                         type: string
             responses:
                 "200":
-                    description: Successful response
+                    description: HelloResp
                     content:
                         application/json:
                             schema:
@@ -117,3 +124,4 @@ components:
             description: Hello - response
 tags:
     - name: HelloService1
+      description: HelloService1描述

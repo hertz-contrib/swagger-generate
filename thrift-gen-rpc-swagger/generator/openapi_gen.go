@@ -42,7 +42,6 @@ import (
 	"github.com/cloudwego/hertz/cmd/hz/util/logs"
 	"github.com/cloudwego/thriftgo/parser"
 	"github.com/cloudwego/thriftgo/plugin"
-	"github.com/cloudwego/thriftgo/semantic"
 	"github.com/cloudwego/thriftgo/thrift_reflection"
 	"github.com/hertz-contrib/swagger-generate/common/consts"
 	common "github.com/hertz-contrib/swagger-generate/common/utils"
@@ -56,6 +55,7 @@ type OpenAPIGenerator struct {
 	ast              *parser.Thrift
 	generatedSchemas []string
 	requiredSchemas  []string
+	requiredTypeDesc []*thrift_reflection.StructDescriptor
 }
 
 // NewOpenAPIGenerator creates a new generator for a protoc plugin invocation.
@@ -74,7 +74,7 @@ func (g *OpenAPIGenerator) BuildDocument(arguments *args.Arguments) []*plugin.Ge
 	version := consts.OpenAPIVersion
 	d.Openapi = version
 	d.Info = &openapi.Info{
-		Title:       consts.DefaultInfoTitle,
+		Title:       consts.DefaultInfoTitle + consts.PluginNameThriftRpcSwagger,
 		Description: consts.DefaultInfoDesc,
 		Version:     consts.DefaultInfoVersion,
 	}
@@ -99,11 +99,11 @@ func (g *OpenAPIGenerator) BuildDocument(arguments *args.Arguments) []*plugin.Ge
 		}
 	}
 
-	g.addPathsToDocument(d, g.ast.Services)
+	g.addPathsToDocument(d, g.fileDesc.GetServices())
 
 	for len(g.requiredSchemas) > 0 {
 		count := len(g.requiredSchemas)
-		g.addSchemasForStructsToDocument(d, g.fileDesc.GetStructs())
+		g.addSchemasForStructsToDocument(d, g.requiredTypeDesc)
 		g.requiredSchemas = g.requiredSchemas[count:len(g.requiredSchemas)]
 	}
 
@@ -221,41 +221,61 @@ func (g *OpenAPIGenerator) getDocumentOption(obj interface{}) error {
 	return nil
 }
 
-func (g *OpenAPIGenerator) addPathsToDocument(d *openapi.Document, services []*parser.Service) {
+func (g *OpenAPIGenerator) addPathsToDocument(d *openapi.Document, services []*thrift_reflection.ServiceDescriptor) {
+	var err error
 	for _, s := range services {
 		annotationsCount := 0
-		for _, f := range s.Functions {
-			comment := g.filterCommentString(f.ReservedComments)
-			operationID := s.GetName() + "_" + f.GetName()
-			path := "/" + f.GetName()
+		for _, m := range s.GetMethods() {
+			var inputDesc, outputDesc, throwDesc *thrift_reflection.StructDescriptor
 
-			var inputDesc *thrift_reflection.StructDescriptor
-			if len(f.Arguments) >= 1 {
-				if len(f.Arguments) > 1 {
-					logs.Warnf("function '%s' has more than one argument, but only the first can be used in hertz now", f.GetName())
+			if len(m.Args) > 0 {
+				if len(m.Args) > 1 {
+					logs.Warnf("function '%s' has more than one argument, but only the first can be used in plugin now", m.GetName())
 				}
-				inputDesc = g.fileDesc.GetStructDescriptor(f.GetArguments()[0].GetType().GetName())
+				// TODO: support more argument types
+				if m.Args[0].GetType().IsStruct() {
+					inputDesc, err = m.Args[0].GetType().GetStructDescriptor()
+					if err != nil {
+						logs.Errorf("Error getting arguments descriptor: %s", err)
+					}
+				} else {
+					logs.Errorf("now only support struct type for input, but got %s", m.Args[0].GetType().GetName())
+				}
 			}
-			outputDesc := g.fileDesc.GetStructDescriptor(f.GetFunctionType().GetName())
-			annotationsCount++
+
+			// TODO: support more response types
+			if m.Response.IsStruct() {
+				outputDesc, err = m.Response.GetStructDescriptor()
+				if err != nil {
+					logs.Errorf("Error getting response descriptor: %s", err)
+				}
+			} else if m.Response.Name != "void" {
+				logs.Errorf("now only support struct type for output, but got %s", m.Response.Name)
+			}
+
+			if len(m.ThrowExceptions) > 0 {
+				throwDesc, err = m.ThrowExceptions[0].GetType().GetExceptionDescriptor()
+				if err != nil {
+					logs.Errorf("Error getting exception descriptor: %s", err)
+				}
+			}
 			var host string
-			hostOrNil := utils.GetAnnotation(f.Annotations, consts.ApiBaseURL)
 
-			if len(hostOrNil) != 0 {
-				host = utils.GetAnnotation(f.Annotations, consts.ApiBaseURL)[0]
+			if urls, ok := m.Annotations[consts.ApiBaseURL]; ok && len(urls) > 0 {
+				host = urls[0]
+			} else if domains, ok := s.Annotations[consts.ApiBaseDomain]; ok && len(domains) > 0 {
+				host = domains[0]
 			}
 
-			if host == "" {
-				hostOrNil = utils.GetAnnotation(s.Annotations, consts.ApiBaseDomain)
-				if len(hostOrNil) != 0 {
-					host = utils.GetAnnotation(s.Annotations, consts.ApiBaseDomain)[0]
-				}
-			}
+			annotationsCount++
+			operationID := s.GetName() + "_" + m.GetName()
+			path := "/" + m.GetName()
+			comment := g.filterCommentString(m.Comments)
 
-			op, path2 := g.buildOperation(d, comment, operationID, s.GetName(), path, host, inputDesc, outputDesc)
-			methodDesc := g.fileDesc.GetMethodDescriptor(s.GetName(), f.GetName())
+			op, path2 := g.buildOperation(d, comment, operationID, s.GetName(), path, host, inputDesc, outputDesc, throwDesc)
+
 			newOp := &openapi.Operation{}
-			err := utils.ParseMethodOption(methodDesc, consts.OpenapiOperation, &newOp)
+			err = utils.ParseMethodOption(m, consts.OpenapiOperation, &newOp)
 			if err != nil {
 				logs.Errorf("Error parsing method option: %s", err)
 			}
@@ -263,10 +283,11 @@ func (g *OpenAPIGenerator) addPathsToDocument(d *openapi.Document, services []*p
 			if err != nil {
 				logs.Errorf("Error merging method option: %s", err)
 			}
+
 			g.addOperationToDocument(d, op, path2)
 		}
 		if annotationsCount > 0 {
-			comment := g.filterCommentString(s.ReservedComments)
+			comment := g.filterCommentString(s.Comments)
 			d.Tags = append(d.Tags, &openapi.Tag{Name: s.GetName(), Description: comment})
 		}
 	}
@@ -281,6 +302,7 @@ func (g *OpenAPIGenerator) buildOperation(
 	host string,
 	inputDesc *thrift_reflection.StructDescriptor,
 	outputDesc *thrift_reflection.StructDescriptor,
+	throwDesc *thrift_reflection.StructDescriptor,
 ) (*openapi.Operation, string) {
 	// Parameters array to hold all parameter objects
 	var parameters []*openapi.ParameterOrReference
@@ -302,58 +324,101 @@ func (g *OpenAPIGenerator) buildOperation(
 	})
 
 	var RequestBody *openapi.RequestBodyOrReference
-	bodySchema := g.getSchemaByOption(inputDesc)
 
-	var additionalProperties []*openapi.NamedMediaType
-	if len(bodySchema.Properties.AdditionalProperties) > 0 {
-		additionalProperties = append(additionalProperties, &openapi.NamedMediaType{
-			Name: consts.ContentTypeJSON,
-			Value: &openapi.MediaType{
-				Schema: &openapi.SchemaOrReference{
-					Schema: bodySchema,
-				},
-			},
-		})
-	}
+	if inputDesc != nil {
+		bodySchema := g.getSchemaByOption(inputDesc)
 
-	if len(additionalProperties) > 0 {
-		RequestBody = &openapi.RequestBodyOrReference{
-			RequestBody: &openapi.RequestBody{
-				Description: g.filterCommentString(inputDesc.Comments),
-				Content: &openapi.MediaTypes{
-					AdditionalProperties: additionalProperties,
+		var additionalProperties []*openapi.NamedMediaType
+		if len(bodySchema.Properties.AdditionalProperties) > 0 {
+			additionalProperties = append(additionalProperties, &openapi.NamedMediaType{
+				Name: consts.ContentTypeJSON,
+				Value: &openapi.MediaType{
+					Schema: &openapi.SchemaOrReference{
+						Schema: bodySchema,
+					},
 				},
-			},
+			})
+		}
+
+		if len(additionalProperties) > 0 {
+			RequestBody = &openapi.RequestBodyOrReference{
+				RequestBody: &openapi.RequestBody{
+					Description: g.filterCommentString(inputDesc.Comments),
+					Content: &openapi.MediaTypes{
+						AdditionalProperties: additionalProperties,
+					},
+				},
+			}
 		}
 	}
 
-	name, content := g.getResponseForStruct(d, outputDesc)
-	desc := g.filterCommentString(outputDesc.Comments)
+	var (
+		desc                    string
+		contentOrEmpty          *openapi.MediaTypes
+		exceptionDesc           string
+		exceptionContentOrEmpty *openapi.MediaTypes
+		responses               *openapi.Responses
+	)
 
-	if desc == "" {
-		desc = consts.DefaultResponseDesc
-	}
+	if outputDesc != nil {
+		name, content := g.getResponseForStruct(d, outputDesc)
+		desc = g.filterCommentString(outputDesc.Comments)
 
-	var contentOrEmpty *openapi.MediaTypes
+		if desc == "" {
+			desc = consts.DefaultResponseDesc
+		}
 
-	if len(content.AdditionalProperties) != 0 {
-		contentOrEmpty = content
-	}
+		if len(content.AdditionalProperties) != 0 {
+			contentOrEmpty = content
+		}
 
-	var responses *openapi.Responses
-	if contentOrEmpty != nil {
-		responses = &openapi.Responses{
-			ResponseOrReference: []*openapi.NamedResponseOrReference{
-				{
-					Name: name,
-					Value: &openapi.ResponseOrReference{
-						Response: &openapi.Response{
-							Description: desc,
-							Content:     contentOrEmpty,
+		if contentOrEmpty != nil || exceptionContentOrEmpty != nil {
+			responses = &openapi.Responses{
+				ResponseOrReference: []*openapi.NamedResponseOrReference{
+					{
+						Name: name,
+						Value: &openapi.ResponseOrReference{
+							Response: &openapi.Response{
+								Description: desc,
+								Content:     contentOrEmpty,
+							},
 						},
 					},
 				},
-			},
+			}
+		}
+	}
+
+	if throwDesc != nil {
+		exceptionName, exceptionContent := g.getExceptionForStruct(d, throwDesc)
+		exceptionDesc = g.filterCommentString(throwDesc.Comments)
+
+		if exceptionDesc == "" {
+			exceptionDesc = consts.DefaultExceptionDesc
+		}
+
+		if len(exceptionContent.AdditionalProperties) != 0 {
+			exceptionContentOrEmpty = exceptionContent
+		}
+
+		if responses == nil {
+			responses = &openapi.Responses{
+				ResponseOrReference: []*openapi.NamedResponseOrReference{},
+			}
+		}
+
+		if contentOrEmpty != nil || exceptionContentOrEmpty != nil {
+			responses = &openapi.Responses{
+				ResponseOrReference: append(responses.ResponseOrReference, &openapi.NamedResponseOrReference{
+					Name: exceptionName,
+					Value: &openapi.ResponseOrReference{
+						Response: &openapi.Response{
+							Description: exceptionDesc,
+							Content:     exceptionContentOrEmpty,
+						},
+					},
+				}),
+			}
 		}
 	}
 
@@ -425,6 +490,35 @@ func (g *OpenAPIGenerator) getResponseForStruct(d *openapi.Document, desc *thrif
 	}
 
 	return consts.StatusOK, content
+}
+
+func (g *OpenAPIGenerator) getExceptionForStruct(d *openapi.Document, desc *thrift_reflection.StructDescriptor) (string, *openapi.MediaTypes) {
+	bodySchema := g.getSchemaByOption(desc)
+
+	var additionalProperties []*openapi.NamedMediaType
+
+	if len(bodySchema.Properties.AdditionalProperties) > 0 {
+		refSchema := &openapi.NamedSchemaOrReference{
+			Name:  desc.GetName(),
+			Value: &openapi.SchemaOrReference{Schema: bodySchema},
+		}
+		ref := consts.ComponentSchemaPrefix + desc.GetName()
+		g.addSchemaToDocument(d, refSchema)
+		additionalProperties = append(additionalProperties, &openapi.NamedMediaType{
+			Name: consts.ContentTypeJSON,
+			Value: &openapi.MediaType{
+				Schema: &openapi.SchemaOrReference{
+					Reference: &openapi.Reference{Xref: ref},
+				},
+			},
+		})
+	}
+
+	content := &openapi.MediaTypes{
+		AdditionalProperties: additionalProperties,
+	}
+
+	return consts.StatusBadRequest, content
 }
 
 func (g *OpenAPIGenerator) getSchemaByOption(inputDesc *thrift_reflection.StructDescriptor) *openapi.Schema {
@@ -549,25 +643,8 @@ func (g *OpenAPIGenerator) addSchemasForStructsToDocument(d *openapi.Document, s
 				continue
 			}
 			if fieldType.IsStruct() {
-				structDesc := g.fileDesc.GetStructDescriptor(fieldType.GetName())
-				if structDesc != nil {
-					sls = append(sls, structDesc)
-				} else {
-					parts := semantic.SplitType(fieldType.GetName())
-					switch len(parts) {
-					case 2:
-						refAst := g.fileDesc.GetIncludeFD(parts[0])
-						if refAst != nil {
-							for _, s := range refAst.Structs {
-								if s.GetName() == parts[1] {
-									sls = append(sls, s)
-								}
-							}
-						} else {
-							logs.Errorf("Error could not find struct-like type for field: %s\n", fieldType.GetName())
-						}
-					}
-				}
+				structDesc, _ := fieldType.GetStructDescriptor()
+				sls = append(sls, structDesc)
 			}
 		}
 		if len(sls) > 0 {
@@ -575,37 +652,22 @@ func (g *OpenAPIGenerator) addSchemasForStructsToDocument(d *openapi.Document, s
 		}
 
 		schemaName := s.GetName()
+
 		// Only generate this if we need it and haven't already generated it.
 		if !common.Contains(g.requiredSchemas, schemaName) ||
 			common.Contains(g.generatedSchemas, schemaName) {
 			continue
 		}
 
-		structDesc := g.fileDesc.GetStructDescriptor(s.GetName())
-		if structDesc == nil {
-			for k := range g.fileDesc.Includes {
-				includeFD := g.fileDesc.GetIncludeFD(k)
-				if includeFD == nil {
-					continue
-				}
-				for _, v := range includeFD.Structs {
-					if v.GetName() == s.GetName() {
-						structDesc = v
-						break
-					}
-				}
-			}
-		}
-
 		// Get the description from the comments.
-		messageDescription := g.filterCommentString(structDesc.Comments)
+		messageDescription := g.filterCommentString(s.Comments)
 
 		// Build an array holding the fields of the message.
 		definitionProperties := &openapi.Properties{
 			AdditionalProperties: make([]*openapi.NamedSchemaOrReference, 0),
 		}
 
-		for _, field := range structDesc.Fields {
+		for _, field := range s.Fields {
 			// Get the field description from the comments.
 			description := g.filterCommentString(field.Comments)
 			fieldSchema := g.schemaOrReferenceForField(field.Type)
@@ -644,7 +706,7 @@ func (g *OpenAPIGenerator) addSchemasForStructsToDocument(d *openapi.Document, s
 		}
 
 		var extSchema *openapi.Schema
-		err := utils.ParseStructOption(structDesc, consts.OpenapiSchema, &extSchema)
+		err := utils.ParseStructOption(s, consts.OpenapiSchema, &extSchema)
 		if err != nil {
 			logs.Errorf("Error parsing struct option: %s", err)
 		}
@@ -695,6 +757,7 @@ func (g *OpenAPIGenerator) schemaReferenceForMessage(message *thrift_reflection.
 	schemaName := message.GetName()
 	if !common.Contains(g.requiredSchemas, schemaName) {
 		g.requiredSchemas = append(g.requiredSchemas, schemaName)
+		g.requiredTypeDesc = append(g.requiredTypeDesc, message)
 	}
 	return consts.ComponentSchemaPrefix + schemaName
 }
@@ -735,6 +798,43 @@ func (g *OpenAPIGenerator) schemaOrReferenceForField(fieldType *thrift_reflectio
 				},
 			},
 		}
+	case fieldType.IsTypedef():
+		typedefDesc, err := fieldType.GetTypedefDescriptor()
+		if err != nil {
+			logs.Errorf("Error getting typedef descriptor: %s", err)
+			return nil
+		}
+		kindSchema = g.schemaOrReferenceForField(typedefDesc.Type)
+
+	case fieldType.IsEnum():
+		enumDesc, err := fieldType.GetEnumDescriptor()
+		if err != nil {
+			logs.Errorf("Error getting enum descriptor: %s", err)
+			return nil
+		}
+		kindSchema = &openapi.SchemaOrReference{Schema: &openapi.Schema{}}
+		kindSchema.Schema.Type = "string"
+		kindSchema.Schema.Format = "enum"
+		kindSchema.Schema.Enum = make([]*openapi.Any, 0, len(enumDesc.GetValues()))
+		for _, v := range enumDesc.GetValues() {
+			kindSchema.Schema.Enum = append(kindSchema.Schema.Enum, &openapi.Any{Yaml: v.GetName()})
+		}
+
+	case fieldType.IsUnion():
+		unionDesc, err := fieldType.GetUnionDescriptor()
+		if err != nil {
+			logs.Errorf("Error getting union descriptor: %s", err)
+			return nil
+		}
+		kindSchema = &openapi.SchemaOrReference{Schema: &openapi.Schema{}}
+		kindSchema.Schema.OneOf = make([]*openapi.SchemaOrReference, 0, len(unionDesc.GetFields()))
+		for _, f := range unionDesc.GetFields() {
+			fieldSchema := g.schemaOrReferenceForField(f.Type)
+			kindSchema.Schema.OneOf = append(kindSchema.Schema.OneOf, fieldSchema)
+		}
+
+	case fieldType.IsException():
+		logs.Errorf("Error: exception type not supported: %s for field", fieldType.GetName())
 
 	default:
 		kindSchema = &openapi.SchemaOrReference{Schema: &openapi.Schema{}}

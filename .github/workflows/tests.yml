@@ -25,4 +25,5 @@ jobs:
         run: chmod +x ./hack/tools.sh
 
       - name: Unit Test
+        if: success() && files.exists('**/*_test.go')
         run: make test
