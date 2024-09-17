@@ -1,0 +1,137 @@
+syntax = "proto3";
+
+package hello;
+
+option go_package = "/example";
+
+import "api.proto";
+import "openapi/annotations.proto";
+
+option (openapi.document) = {
+   info: {
+      title: "example swagger doc";
+      version: "Version from annotation";
+   }
+};
+
+message FormReq {
+   option (openapi.schema) = {
+      title: "Hello - request";
+      description: "Hello - request";
+      required: [
+         "form1"
+      ];
+   };
+
+   string FormValue = 1 [
+      (openapi.property) = {
+         title: "this is an override field schema title";
+         max_length: 255;
+      }
+   ];
+
+   //内嵌message描述
+   message InnerForm {
+      string InnerFormValue = 1;
+   }
+
+   InnerForm FormValue1 = 2;
+}
+
+message QueryReq {
+   map<string, string> strings_map = 7;
+   repeated string items = 6;
+   //QueryValue描述
+   string QueryValue = 1 [
+      (openapi.parameter) = {
+         required: true;
+      },
+      (openapi.property) = {
+         title: "Name";
+         description: "Name";
+         type: "string";
+         min_length: 1;
+         max_length: 50;
+      }
+   ];
+}
+
+message PathReq {
+   //field: path描述
+   string PathValue = 1;
+}
+
+message BodyReq {
+   //field: body描述
+   string BodyValue = 1;
+   //field: query描述
+   string QueryValue = 2;
+   //field: body1描述
+   string Body1Value = 3;
+}
+
+message HelloReq {
+
+   string Name = 1[
+      (openapi.property) = {
+         title: "Name";
+         description: "Name";
+         type: "string";
+         min_length: 1;
+         max_length: 50;
+      }
+   ];
+}
+
+// HelloResp描述
+message HelloResp {
+   option (openapi.schema) = {
+      title: "Hello - response";
+      description: "Hello - response";
+      required: [
+         "RespBody"
+      ];
+   };
+
+   //RespBody描述
+   string RespBody = 1[
+      (openapi.property) = {
+         title: "response content";
+         description: "response content";
+         type: "string";
+         min_length: 1;
+         max_length: 80;
+      }
+   ];
+
+   string token = 2[
+      (openapi.property) = {
+         title: "token";
+         description: "token";
+         type: "string";
+      }
+   ];
+}
+
+//HelloService1描述
+service HelloService1 {
+   option (api.base_domain) = "http://127.0.0.1:8080";
+   rpc QueryMethod1(QueryReq) returns (HelloResp) {}
+
+   rpc FormMethod(FormReq) returns (HelloResp) {}
+
+   rpc PathMethod(PathReq) returns (HelloResp) {}
+
+   rpc BodyMethod(BodyReq) returns (HelloResp) {}
+
+}
+
+service HelloService2 {
+   rpc QueryMethod2(QueryReq) returns (HelloResp) {
+      option (api.baseurl) = "http://127.0.0.1:8080";
+      option(openapi.operation) = {
+         summary: "Hello - Get";
+         description: "Hello - Get";
+      };
+   }
+}

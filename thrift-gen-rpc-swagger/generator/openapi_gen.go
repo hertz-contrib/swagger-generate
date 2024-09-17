@@ -330,11 +330,20 @@ func (g *OpenAPIGenerator) buildOperation(
 
 		var additionalProperties []*openapi.NamedMediaType
 		if len(bodySchema.Properties.AdditionalProperties) > 0 {
+			refSchema := &openapi.NamedSchemaOrReference{
+				Name:  inputDesc.GetName(),
+				Value: &openapi.SchemaOrReference{Schema: bodySchema},
+			}
+
+			ref := consts.ComponentSchemaPrefix + inputDesc.GetName()
+
+			g.addSchemaToDocument(d, refSchema)
+
 			additionalProperties = append(additionalProperties, &openapi.NamedMediaType{
 				Name: consts.ContentTypeJSON,
 				Value: &openapi.MediaType{
 					Schema: &openapi.SchemaOrReference{
-						Schema: bodySchema,
+						Reference: &openapi.Reference{Xref: ref},
 					},
 				},
 			})

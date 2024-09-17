@@ -92,7 +92,7 @@ func NewOpenAPIGenerator(plugin *protogen.Plugin, conf Configuration, inputFiles
 // Run runs the generator.
 func (g *OpenAPIGenerator) Run(outputFile *protogen.GeneratedFile) error {
 	d := g.buildDocument()
-	bytes, err := d.YAMLValue("Generated with protoc-gen-http-swagger\n" + consts.InfoURL + consts.PluginNameProtocHttpSwagger)
+	bytes, err := d.YAMLValue("Generated with " + consts.PluginNameProtocHttpSwagger + "\n" + consts.InfoURL + consts.PluginNameProtocHttpSwagger)
 	if err != nil {
 		return fmt.Errorf("failed to marshal yaml: %s", err.Error())
 	}
@@ -461,32 +461,51 @@ func (g *OpenAPIGenerator) buildOperation(
 
 	var RequestBody *openapi.RequestBodyOrReference
 	if methodName != consts.HttpMethodGet && methodName != consts.HttpMethodHead && methodName != consts.HttpMethodDelete {
-		bodySchema := g.getSchemaByOption(inputMessage, api.E_Body)
-		formSchema := g.getSchemaByOption(inputMessage, api.E_Form)
-		rawBodySchema := g.getSchemaByOption(inputMessage, api.E_RawBody)
-
 		var additionalProperties []*openapi.NamedMediaType
 
+		bodySchema := g.getSchemaByOption(inputMessage, api.E_Body)
+
 		if len(bodySchema.Properties.AdditionalProperties) > 0 {
+
+			bodyRefSchema := &openapi.NamedSchemaOrReference{
+				Name:  g.reflect.formatMessageName(inputMessage.Desc) + consts.ComponentSchemaSuffixBody,
+				Value: &openapi.SchemaOrReference{Oneof: &openapi.SchemaOrReference_Schema{Schema: bodySchema}},
+			}
+
+			bodyRef := consts.ComponentSchemaPrefix + g.reflect.formatMessageName(inputMessage.Desc) + consts.ComponentSchemaSuffixBody
+
+			g.addSchemaToDocument(d, bodyRefSchema)
+
 			additionalProperties = append(additionalProperties, &openapi.NamedMediaType{
 				Name: consts.ContentTypeJSON,
 				Value: &openapi.MediaType{
 					Schema: &openapi.SchemaOrReference{
-						Oneof: &openapi.SchemaOrReference_Schema{
-							Schema: bodySchema,
+						Oneof: &openapi.SchemaOrReference_Reference{
+							Reference: &openapi.Reference{XRef: bodyRef},
 						},
 					},
 				},
 			})
 		}
 
+		formSchema := g.getSchemaByOption(inputMessage, api.E_Form)
+
 		if len(formSchema.Properties.AdditionalProperties) > 0 {
+			formRefSchema := &openapi.NamedSchemaOrReference{
+				Name:  g.reflect.formatMessageName(inputMessage.Desc) + consts.ComponentSchemaSuffixForm,
+				Value: &openapi.SchemaOrReference{Oneof: &openapi.SchemaOrReference_Schema{Schema: formSchema}},
+			}
+
+			formRef := consts.ComponentSchemaPrefix + g.reflect.formatMessageName(inputMessage.Desc) + consts.ComponentSchemaSuffixForm
+
+			g.addSchemaToDocument(d, formRefSchema)
+
 			additionalProperties = append(additionalProperties, &openapi.NamedMediaType{
 				Name: consts.ContentTypeFormMultipart,
 				Value: &openapi.MediaType{
 					Schema: &openapi.SchemaOrReference{
-						Oneof: &openapi.SchemaOrReference_Schema{
-							Schema: formSchema,
+						Oneof: &openapi.SchemaOrReference_Reference{
+							Reference: &openapi.Reference{XRef: formRef},
 						},
 					},
 				},
@@ -496,21 +515,32 @@ func (g *OpenAPIGenerator) buildOperation(
 				Name: consts.ContentTypeFormURLEncoded,
 				Value: &openapi.MediaType{
 					Schema: &openapi.SchemaOrReference{
-						Oneof: &openapi.SchemaOrReference_Schema{
-							Schema: formSchema,
+						Oneof: &openapi.SchemaOrReference_Reference{
+							Reference: &openapi.Reference{XRef: formRef},
 						},
 					},
 				},
 			})
 		}
 
+		rawBodySchema := g.getSchemaByOption(inputMessage, api.E_RawBody)
+
 		if len(rawBodySchema.Properties.AdditionalProperties) > 0 {
+			rawBodyRefSchema := &openapi.NamedSchemaOrReference{
+				Name:  g.reflect.formatMessageName(inputMessage.Desc) + consts.ComponentSchemaSuffixRawBody,
+				Value: &openapi.SchemaOrReference{Oneof: &openapi.SchemaOrReference_Schema{Schema: rawBodySchema}},
+			}
+
+			rawBodyRef := consts.ComponentSchemaPrefix + g.reflect.formatMessageName(inputMessage.Desc) + consts.ComponentSchemaSuffixRawBody
+
+			g.addSchemaToDocument(d, rawBodyRefSchema)
+
 			additionalProperties = append(additionalProperties, &openapi.NamedMediaType{
 				Name: consts.ContentTypeRawBody,
 				Value: &openapi.MediaType{
 					Schema: &openapi.SchemaOrReference{
-						Oneof: &openapi.SchemaOrReference_Schema{
-							Schema: rawBodySchema,
+						Oneof: &openapi.SchemaOrReference_Reference{
+							Reference: &openapi.Reference{XRef: rawBodyRef},
 						},
 					},
 				},

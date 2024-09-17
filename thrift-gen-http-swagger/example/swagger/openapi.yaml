@@ -25,14 +25,7 @@ paths:
                 content:
                     application/json:
                         schema:
-                            type: object
-                            properties:
-                                body:
-                                    type: string
-                                    description: 'field: body描述'
-                                body1:
-                                    type: string
-                                    description: 'field: body1描述'
+                            $ref: '#/components/schemas/BodyReqBody'
             responses:
                 "200":
                     description: HelloResp
@@ -56,32 +49,10 @@ paths:
                 content:
                     multipart/form-data:
                         schema:
-                            title: Hello - request
-                            required:
-                                - form1
-                            type: object
-                            properties:
-                                form1:
-                                    title: this is an override field schema title
-                                    maxLength: 255
-                                    type: string
-                                form3:
-                                    $ref: '#/components/schemas/InnerForm'
-                            description: Hello - request
+                            $ref: '#/components/schemas/FormReqForm'
                     application/x-www-form-urlencoded:
                         schema:
-                            title: Hello - request
-                            required:
-                                - form1
-                            type: object
-                            properties:
-                                form1:
-                                    title: this is an override field schema title
-                                    maxLength: 255
-                                    type: string
-                                form3:
-                                    $ref: '#/components/schemas/InnerForm'
-                            description: Hello - request
+                            $ref: '#/components/schemas/FormReqForm'
             responses:
                 "200":
                     description: HelloResp
@@ -214,6 +185,28 @@ paths:
             - url: http://127.0.0.1:8888
 components:
     schemas:
+        BodyReqBody:
+            type: object
+            properties:
+                body:
+                    type: string
+                    description: 'field: body描述'
+                body1:
+                    type: string
+                    description: 'field: body1描述'
+        FormReqForm:
+            title: Hello - request
+            required:
+                - form1
+            type: object
+            properties:
+                form1:
+                    title: this is an override field schema title
+                    maxLength: 255
+                    type: string
+                form3:
+                    $ref: '#/components/schemas/InnerForm'
+            description: Hello - request
         HelloRespBody:
             title: Hello - response
             required:

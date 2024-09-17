@@ -442,28 +442,47 @@ func (g *OpenAPIGenerator) buildOperation(
 
 	if inputDesc != nil {
 		if methodName != consts.HttpMethodGet && methodName != consts.HttpMethodHead && methodName != consts.HttpMethodDelete {
-			bodySchema := g.getSchemaByOption(inputDesc, consts.ApiBody)
-			formSchema := g.getSchemaByOption(inputDesc, consts.ApiForm)
-			rawBodySchema := g.getSchemaByOption(inputDesc, consts.ApiRawBody)
-
 			var additionalProperties []*openapi.NamedMediaType
+
+			bodySchema := g.getSchemaByOption(inputDesc, consts.ApiBody)
+
 			if len(bodySchema.Properties.AdditionalProperties) > 0 {
+				bodyRefSchema := &openapi.NamedSchemaOrReference{
+					Name:  inputDesc.GetName() + consts.ComponentSchemaSuffixBody,
+					Value: &openapi.SchemaOrReference{Schema: bodySchema},
+				}
+
+				bodyRef := consts.ComponentSchemaPrefix + inputDesc.GetName() + consts.ComponentSchemaSuffixBody
+
+				g.addSchemaToDocument(d, bodyRefSchema)
+
 				additionalProperties = append(additionalProperties, &openapi.NamedMediaType{
 					Name: consts.ContentTypeJSON,
 					Value: &openapi.MediaType{
 						Schema: &openapi.SchemaOrReference{
-							Schema: bodySchema,
+							Reference: &openapi.Reference{Xref: bodyRef},
 						},
 					},
 				})
 			}
 
+			formSchema := g.getSchemaByOption(inputDesc, consts.ApiForm)
+
 			if len(formSchema.Properties.AdditionalProperties) > 0 {
+				formRefSchema := &openapi.NamedSchemaOrReference{
+					Name:  inputDesc.GetName() + consts.ComponentSchemaSuffixForm,
+					Value: &openapi.SchemaOrReference{Schema: formSchema},
+				}
+
+				formRef := consts.ComponentSchemaPrefix + inputDesc.GetName() + consts.ComponentSchemaSuffixForm
+
+				g.addSchemaToDocument(d, formRefSchema)
+
 				additionalProperties = append(additionalProperties, &openapi.NamedMediaType{
 					Name: consts.ContentTypeFormMultipart,
 					Value: &openapi.MediaType{
 						Schema: &openapi.SchemaOrReference{
-							Schema: formSchema,
+							Reference: &openapi.Reference{Xref: formRef},
 						},
 					},
 				})
@@ -472,18 +491,29 @@ func (g *OpenAPIGenerator) buildOperation(
 					Name: consts.ContentTypeFormURLEncoded,
 					Value: &openapi.MediaType{
 						Schema: &openapi.SchemaOrReference{
-							Schema: formSchema,
+							Reference: &openapi.Reference{Xref: formRef},
 						},
 					},
 				})
 			}
 
+			rawBodySchema := g.getSchemaByOption(inputDesc, consts.ApiRawBody)
+
 			if len(rawBodySchema.Properties.AdditionalProperties) > 0 {
+				rawBodyRefSchema := &openapi.NamedSchemaOrReference{
+					Name:  inputDesc.GetName() + consts.ComponentSchemaSuffixRawBody,
+					Value: &openapi.SchemaOrReference{Schema: rawBodySchema},
+				}
+
+				rawBodyRef := consts.ComponentSchemaPrefix + inputDesc.GetName() + consts.ComponentSchemaSuffixRawBody
+
+				g.addSchemaToDocument(d, rawBodyRefSchema)
+
 				additionalProperties = append(additionalProperties, &openapi.NamedMediaType{
 					Name: consts.ContentTypeRawBody,
 					Value: &openapi.MediaType{
 						Schema: &openapi.SchemaOrReference{
-							Schema: rawBodySchema,
+							Reference: &openapi.Reference{Xref: rawBodyRef},
 						},
 					},
 				})
