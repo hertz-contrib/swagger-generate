@@ -35,14 +35,16 @@ package generator
 
 import (
 	"fmt"
-	"log"
 	"regexp"
 	"sort"
 	"strings"
 
+	"github.com/cloudwego/hertz/cmd/hz/util/logs"
+	"github.com/hertz-contrib/swagger-generate/common/consts"
+	common "github.com/hertz-contrib/swagger-generate/common/utils"
+	"github.com/hertz-contrib/swagger-generate/idl/protobuf/api"
+	"github.com/hertz-contrib/swagger-generate/idl/protobuf/openapi"
 	wk "github.com/hertz-contrib/swagger-generate/protoc-gen-http-swagger/generator/wellknown"
-	"github.com/hertz-contrib/swagger-generate/protoc-gen-http-swagger/protobuf/api"
-	"github.com/hertz-contrib/swagger-generate/protoc-gen-http-swagger/protobuf/openapi"
 	"google.golang.org/genproto/googleapis/api/annotations"
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/proto"
@@ -60,10 +62,6 @@ type Configuration struct {
 	OutputMode     *string
 }
 
-const (
-	infoURL = "https://github.com/hertz-contrib/swagger-generate/protoc-gen-http-swagger"
-)
-
 // In order to dynamically add google.rpc.Status responses we need
 // to know the message descriptors for google.rpc.Status as well
 // as google.protobuf.Any.
@@ -73,30 +71,28 @@ var (
 
 // OpenAPIGenerator holds internal state needed to generate an OpenAPIv3 document for a transcoded Protocol Buffer service.
 type OpenAPIGenerator struct {
-	conf              Configuration
-	plugin            *protogen.Plugin
-	inputFiles        []*protogen.File
-	reflect           *OpenAPIReflector
-	generatedSchemas  []string // Names of schemas that have already been generated.
-	linterRulePattern *regexp.Regexp
+	conf             Configuration
+	plugin           *protogen.Plugin
+	inputFiles       []*protogen.File
+	reflect          *OpenAPIReflector
+	generatedSchemas []string // Names of schemas that have already been generated.
 }
 
 // NewOpenAPIGenerator creates a new generator for a protoc plugin invocation.
 func NewOpenAPIGenerator(plugin *protogen.Plugin, conf Configuration, inputFiles []*protogen.File) *OpenAPIGenerator {
 	return &OpenAPIGenerator{
-		conf:              conf,
-		plugin:            plugin,
-		inputFiles:        inputFiles,
-		reflect:           NewOpenAPIReflector(conf),
-		generatedSchemas:  make([]string, 0),
-		linterRulePattern: regexp.MustCompile(`\(-- .* --\)`),
+		conf:             conf,
+		plugin:           plugin,
+		inputFiles:       inputFiles,
+		reflect:          NewOpenAPIReflector(conf),
+		generatedSchemas: make([]string, 0),
 	}
 }
 
 // Run runs the generator.
 func (g *OpenAPIGenerator) Run(outputFile *protogen.GeneratedFile) error {
 	d := g.buildDocument()
-	bytes, err := d.YAMLValue("Generated with protoc-gen-http-swagger\n" + infoURL)
+	bytes, err := d.YAMLValue("Generated with protoc-gen-http-swagger\n" + consts.InfoURL + consts.PluginNameProtocHttpSwagger)
 	if err != nil {
 		return fmt.Errorf("failed to marshal yaml: %s", err.Error())
 	}
@@ -110,7 +106,7 @@ func (g *OpenAPIGenerator) Run(outputFile *protogen.GeneratedFile) error {
 func (g *OpenAPIGenerator) buildDocument() *openapi.Document {
 	d := &openapi.Document{}
 
-	d.Openapi = "3.0.3"
+	d.Openapi = consts.OpenAPIVersion
 	d.Info = &openapi.Info{
 		Version:     *g.conf.Version,
 		Title:       *g.conf.Title,
@@ -135,7 +131,7 @@ func (g *OpenAPIGenerator) buildDocument() *openapi.Document {
 				if doc, ok := extDocument.(*openapi.Document); ok {
 					proto.Merge(d, doc)
 				} else {
-					log.Printf("unexpected type for Document: %T", extDocument)
+					logs.Errorf("unexpected type for Document: %T", extDocument)
 				}
 			}
 			g.addPathsToDocument(d, file.Services)
@@ -171,24 +167,24 @@ func (g *OpenAPIGenerator) buildDocument() *openapi.Document {
 		var servers []string
 		// Only 1 server will ever be set, per method, by the generator
 		if path.Value.Get != nil && len(path.Value.Get.Servers) == 1 {
-			servers = appendUnique(servers, path.Value.Get.Servers[0].Url)
-			allServers = appendUnique(allServers, path.Value.Get.Servers[0].Url)
+			servers = common.AppendUnique(servers, path.Value.Get.Servers[0].Url)
+			allServers = common.AppendUnique(allServers, path.Value.Get.Servers[0].Url)
 		}
 		if path.Value.Post != nil && len(path.Value.Post.Servers) == 1 {
-			servers = appendUnique(servers, path.Value.Post.Servers[0].Url)
-			allServers = appendUnique(allServers, path.Value.Post.Servers[0].Url)
+			servers = common.AppendUnique(servers, path.Value.Post.Servers[0].Url)
+			allServers = common.AppendUnique(allServers, path.Value.Post.Servers[0].Url)
 		}
 		if path.Value.Put != nil && len(path.Value.Put.Servers) == 1 {
-			servers = appendUnique(servers, path.Value.Put.Servers[0].Url)
-			allServers = appendUnique(allServers, path.Value.Put.Servers[0].Url)
+			servers = common.AppendUnique(servers, path.Value.Put.Servers[0].Url)
+			allServers = common.AppendUnique(allServers, path.Value.Put.Servers[0].Url)
 		}
 		if path.Value.Delete != nil && len(path.Value.Delete.Servers) == 1 {
-			servers = appendUnique(servers, path.Value.Delete.Servers[0].Url)
-			allServers = appendUnique(allServers, path.Value.Delete.Servers[0].Url)
+			servers = common.AppendUnique(servers, path.Value.Delete.Servers[0].Url)
+			allServers = common.AppendUnique(allServers, path.Value.Delete.Servers[0].Url)
 		}
 		if path.Value.Patch != nil && len(path.Value.Patch.Servers) == 1 {
-			servers = appendUnique(servers, path.Value.Patch.Servers[0].Url)
-			allServers = appendUnique(allServers, path.Value.Patch.Servers[0].Url)
+			servers = common.AppendUnique(servers, path.Value.Patch.Servers[0].Url)
+			allServers = common.AppendUnique(allServers, path.Value.Patch.Servers[0].Url)
 		}
 
 		if len(servers) == 1 {
@@ -255,7 +251,7 @@ func (g *OpenAPIGenerator) buildDocument() *openapi.Document {
 
 // filterCommentString removes linter rules from comments.
 func (g *OpenAPIGenerator) filterCommentString(c protogen.Comments) string {
-	comment := g.linterRulePattern.ReplaceAllString(string(c), "")
+	comment := regexp.MustCompile(consts.LinterRulePatternRegexp).ReplaceAllString(string(c), "")
 	return strings.TrimSpace(comment)
 }
 
@@ -277,7 +273,7 @@ func (g *OpenAPIGenerator) getSchemaByOption(inputMessage *protogen.Message, bod
 	var required []string
 	for _, field := range inputMessage.Fields {
 		if ext := proto.GetExtension(field.Desc.Options(), bodyType); ext != "" {
-			if contains(allRequired, ext.(string)) {
+			if common.Contains(allRequired, ext.(string)) {
 				required = append(required, ext.(string))
 			}
 
@@ -301,7 +297,7 @@ func (g *OpenAPIGenerator) getSchemaByOption(inputMessage *protogen.Message, bod
 						}
 					}
 				default:
-					log.Printf("unsupported extension type %T", extension)
+					logs.Error("unsupported extension type %T", extension)
 				}
 			}
 
@@ -347,7 +343,7 @@ func (g *OpenAPIGenerator) getSchemaByOption(inputMessage *protogen.Message, bod
 	}
 
 	schema := &openapi.Schema{
-		Type:       "object",
+		Type:       consts.SchemaObjectType,
 		Properties: definitionProperties,
 	}
 
@@ -384,7 +380,7 @@ func (g *OpenAPIGenerator) buildOperation(
 		// Check for each type of extension (query, path, cookie, header)
 		if ext = proto.GetExtension(field.Desc.Options(), api.E_Query); ext != "" {
 			paramName = proto.GetExtension(field.Desc.Options(), api.E_Query).(string)
-			paramIn = "query"
+			paramIn = consts.ParameterInQuery
 			paramDesc = g.filterCommentString(field.Comments.Leading)
 			fieldSchema = g.reflect.schemaOrReferenceForField(field.Desc)
 			if schema, ok := fieldSchema.Oneof.(*openapi.SchemaOrReference_Schema); ok {
@@ -394,13 +390,13 @@ func (g *OpenAPIGenerator) buildOperation(
 					if property, ok := extProperty.(*openapi.Schema); ok {
 						proto.Merge(schema.Schema, property)
 					} else {
-						log.Printf("unexpected type for Property: %T", extProperty)
+						logs.Errorf("unexpected type for Property: %T", extProperty)
 					}
 				}
 			}
 		} else if ext = proto.GetExtension(field.Desc.Options(), api.E_Path); ext != "" {
 			paramName = proto.GetExtension(field.Desc.Options(), api.E_Path).(string)
-			paramIn = "path"
+			paramIn = consts.ParameterInPath
 			paramDesc = g.filterCommentString(field.Comments.Leading)
 			fieldSchema = g.reflect.schemaOrReferenceForField(field.Desc)
 			if schema, ok := fieldSchema.Oneof.(*openapi.SchemaOrReference_Schema); ok {
@@ -414,7 +410,7 @@ func (g *OpenAPIGenerator) buildOperation(
 			required = true
 		} else if ext = proto.GetExtension(field.Desc.Options(), api.E_Cookie); ext != "" {
 			paramName = proto.GetExtension(field.Desc.Options(), api.E_Cookie).(string)
-			paramIn = "cookie"
+			paramIn = consts.ParameterInCookie
 			paramDesc = g.filterCommentString(field.Comments.Leading)
 			fieldSchema = g.reflect.schemaOrReferenceForField(field.Desc)
 			if schema, ok := fieldSchema.Oneof.(*openapi.SchemaOrReference_Schema); ok {
@@ -426,7 +422,7 @@ func (g *OpenAPIGenerator) buildOperation(
 			}
 		} else if ext = proto.GetExtension(field.Desc.Options(), api.E_Header); ext != "" {
 			paramName = proto.GetExtension(field.Desc.Options(), api.E_Header).(string)
-			paramIn = "header"
+			paramIn = consts.ParameterInHeader
 			paramDesc = g.filterCommentString(field.Comments.Leading)
 			fieldSchema = g.reflect.schemaOrReferenceForField(field.Desc)
 			if schema, ok := fieldSchema.Oneof.(*openapi.SchemaOrReference_Schema); ok {
@@ -449,7 +445,7 @@ func (g *OpenAPIGenerator) buildOperation(
 			if parameterExt, ok := extParameter.(*openapi.Parameter); ok {
 				proto.Merge(parameter, parameterExt)
 			} else {
-				log.Printf("unexpected type for Parameter: %T", extParameter)
+				logs.Errorf("unexpected type for Parameter: %T", extParameter)
 			}
 		}
 
@@ -464,7 +460,7 @@ func (g *OpenAPIGenerator) buildOperation(
 	}
 
 	var RequestBody *openapi.RequestBodyOrReference
-	if methodName != "GET" && methodName != "HEAD" && methodName != "DELETE" {
+	if methodName != consts.HttpMethodGet && methodName != consts.HttpMethodHead && methodName != consts.HttpMethodDelete {
 		bodySchema := g.getSchemaByOption(inputMessage, api.E_Body)
 		formSchema := g.getSchemaByOption(inputMessage, api.E_Form)
 		rawBodySchema := g.getSchemaByOption(inputMessage, api.E_RawBody)
@@ -473,7 +469,7 @@ func (g *OpenAPIGenerator) buildOperation(
 
 		if len(bodySchema.Properties.AdditionalProperties) > 0 {
 			additionalProperties = append(additionalProperties, &openapi.NamedMediaType{
-				Name: "application/json",
+				Name: consts.ContentTypeJSON,
 				Value: &openapi.MediaType{
 					Schema: &openapi.SchemaOrReference{
 						Oneof: &openapi.SchemaOrReference_Schema{
@@ -486,7 +482,7 @@ func (g *OpenAPIGenerator) buildOperation(
 
 		if len(formSchema.Properties.AdditionalProperties) > 0 {
 			additionalProperties = append(additionalProperties, &openapi.NamedMediaType{
-				Name: "multipart/form-data",
+				Name: consts.ContentTypeFormMultipart,
 				Value: &openapi.MediaType{
 					Schema: &openapi.SchemaOrReference{
 						Oneof: &openapi.SchemaOrReference_Schema{
@@ -497,7 +493,7 @@ func (g *OpenAPIGenerator) buildOperation(
 			})
 
 			additionalProperties = append(additionalProperties, &openapi.NamedMediaType{
-				Name: "application/x-www-form-urlencoded",
+				Name: consts.ContentTypeFormURLEncoded,
 				Value: &openapi.MediaType{
 					Schema: &openapi.SchemaOrReference{
 						Oneof: &openapi.SchemaOrReference_Schema{
@@ -510,7 +506,7 @@ func (g *OpenAPIGenerator) buildOperation(
 
 		if len(rawBodySchema.Properties.AdditionalProperties) > 0 {
 			additionalProperties = append(additionalProperties, &openapi.NamedMediaType{
-				Name: "text/plain",
+				Name: consts.ContentTypeRawBody,
 				Value: &openapi.MediaType{
 					Schema: &openapi.SchemaOrReference{
 						Oneof: &openapi.SchemaOrReference_Schema{
@@ -539,7 +535,7 @@ func (g *OpenAPIGenerator) buildOperation(
 
 	desc := g.filterCommentString(outputMessage.Comments.Leading)
 	if desc == "" {
-		desc = "Successful response"
+		desc = consts.DefaultResponseDesc
 	}
 
 	var headerOrEmpty *openapi.HeadersOrReferences
@@ -582,8 +578,8 @@ func (g *OpenAPIGenerator) buildOperation(
 		RequestBody: RequestBody,
 	}
 	if defaultHost != "" {
-		if !strings.HasPrefix(defaultHost, "http://") && !strings.HasPrefix(defaultHost, "https://") {
-			defaultHost = "http://" + defaultHost
+		if !strings.HasPrefix(defaultHost, consts.URLDefaultPrefixHTTP) && !strings.HasPrefix(defaultHost, consts.URLDefaultPrefixHTTPS) {
+			defaultHost = consts.URLDefaultPrefixHTTP + defaultHost
 		}
 		op.Servers = append(op.Servers, &openapi.Server{Url: defaultHost})
 	}
@@ -620,13 +616,13 @@ func (g *OpenAPIGenerator) getResponseForMessage(d *openapi.Document, message *p
 
 	if len(bodySchema.Properties.AdditionalProperties) > 0 {
 		refSchema := &openapi.NamedSchemaOrReference{
-			Name:  g.reflect.formatMessageName(message.Desc) + "Body",
+			Name:  g.reflect.formatMessageName(message.Desc) + consts.ComponentSchemaSuffixBody,
 			Value: &openapi.SchemaOrReference{Oneof: &openapi.SchemaOrReference_Schema{Schema: bodySchema}},
 		}
-		ref := "#/components/schemas/" + g.reflect.formatMessageName(message.Desc) + "Body"
+		ref := consts.ComponentSchemaPrefix + g.reflect.formatMessageName(message.Desc) + consts.ComponentSchemaSuffixBody
 		g.addSchemaToDocument(d, refSchema)
 		additionalProperties = append(additionalProperties, &openapi.NamedMediaType{
-			Name: "application/json",
+			Name: consts.ContentTypeJSON,
 			Value: &openapi.MediaType{
 				Schema: &openapi.SchemaOrReference{
 					Oneof: &openapi.SchemaOrReference_Reference{
@@ -639,13 +635,13 @@ func (g *OpenAPIGenerator) getResponseForMessage(d *openapi.Document, message *p
 
 	if len(rawBodySchema.Properties.AdditionalProperties) > 0 {
 		refSchema := &openapi.NamedSchemaOrReference{
-			Name:  g.reflect.formatMessageName(message.Desc) + "RawBody",
+			Name:  g.reflect.formatMessageName(message.Desc) + consts.ComponentSchemaSuffixRawBody,
 			Value: &openapi.SchemaOrReference{Oneof: &openapi.SchemaOrReference_Schema{Schema: rawBodySchema}},
 		}
-		ref := "#/components/schemas/" + g.reflect.formatMessageName(message.Desc) + "RawBody"
+		ref := consts.ComponentSchemaPrefix + g.reflect.formatMessageName(message.Desc) + consts.ComponentSchemaSuffixRawBody
 		g.addSchemaToDocument(d, refSchema)
 		additionalProperties = append(additionalProperties, &openapi.NamedMediaType{
-			Name: "text/plain",
+			Name: consts.ContentTypeRawBody,
 			Value: &openapi.MediaType{
 				Schema: &openapi.SchemaOrReference{
 					Oneof: &openapi.SchemaOrReference_Reference{
@@ -660,7 +656,7 @@ func (g *OpenAPIGenerator) getResponseForMessage(d *openapi.Document, message *p
 		AdditionalProperties: additionalProperties,
 	}
 
-	return "200", headers, content
+	return consts.StatusOK, headers, content
 }
 
 // addOperationToDocument adds an operation to the specified path/method.
@@ -679,19 +675,19 @@ func (g *OpenAPIGenerator) addOperationToDocument(d *openapi.Document, op *opena
 	}
 	// Set the operation on the specified method.
 	switch methodName {
-	case "GET":
+	case consts.HttpMethodGet:
 		selectedPathItem.Value.Get = op
-	case "POST":
+	case consts.HttpMethodPost:
 		selectedPathItem.Value.Post = op
-	case "PUT":
+	case consts.HttpMethodPut:
 		selectedPathItem.Value.Put = op
-	case "DELETE":
+	case consts.HttpMethodDelete:
 		selectedPathItem.Value.Delete = op
-	case "PATCH":
+	case consts.HttpMethodPatch:
 		selectedPathItem.Value.Patch = op
-	case "OPTIONS":
+	case consts.HttpMethodOptions:
 		selectedPathItem.Value.Options = op
-	case "HEAD":
+	case consts.HttpMethodHead:
 		selectedPathItem.Value.Head = op
 	}
 }
@@ -735,7 +731,7 @@ func (g *OpenAPIGenerator) addPathsToDocument(d *openapi.Document, services []*p
 
 // addSchemaToDocument adds the schema to the document if required
 func (g *OpenAPIGenerator) addSchemaToDocument(d *openapi.Document, schema *openapi.NamedSchemaOrReference) {
-	if contains(g.generatedSchemas, schema.Name) {
+	if common.Contains(g.generatedSchemas, schema.Name) {
 		return
 	}
 	g.generatedSchemas = append(g.generatedSchemas, schema.Name)
@@ -753,8 +749,8 @@ func (g *OpenAPIGenerator) addSchemasForMessagesToDocument(d *openapi.Document, 
 		schemaName := g.reflect.formatMessageName(message.Desc)
 
 		// Only generate this if we need it and haven't already generated it.
-		if !contains(g.reflect.requiredSchemas, schemaName) ||
-			contains(g.generatedSchemas, schemaName) {
+		if !common.Contains(g.reflect.requiredSchemas, schemaName) ||
+			common.Contains(g.generatedSchemas, schemaName) {
 			continue
 		}
 
@@ -803,7 +799,7 @@ func (g *OpenAPIGenerator) addSchemasForMessagesToDocument(d *openapi.Document, 
 						}
 					}
 				default:
-					log.Printf("unsupported extension type %T", extension)
+					logs.Error("unsupported extension type %T", extension)
 				}
 			}
 
@@ -860,7 +856,7 @@ func (g *OpenAPIGenerator) addSchemasForMessagesToDocument(d *openapi.Document, 
 		}
 
 		schema := &openapi.Schema{
-			Type:        "object",
+			Type:        consts.SchemaObjectType,
 			Description: messageDescription,
 			Properties:  definitionProperties,
 			Required:    required,

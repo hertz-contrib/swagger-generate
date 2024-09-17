@@ -31,31 +31,13 @@
  * Modifications are Copyright 2024 CloudWeGo Authors.
  */
 
-package generator
+package utils
 
 import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
-// contains returns true if an array contains a specified string.
-func contains(s []string, e string) bool {
-	for _, a := range s {
-		if a == e {
-			return true
-		}
-	}
-	return false
-}
-
-// appendUnique appends a string, to a string slice, if the string is not already in the slice
-func appendUnique(s []string, e string) []string {
-	if !contains(s, e) {
-		return append(s, e)
-	}
-	return s
-}
-
-func getValueKind(message protoreflect.MessageDescriptor) string {
+func GetValueKind(message protoreflect.MessageDescriptor) string {
 	valueField := getValueField(message)
 	return valueField.Kind().String()
 }

@@ -111,16 +111,3 @@ func ParseFieldOption(descriptor *thrift_reflection.FieldDescriptor, optionName 
 	}
 	return err
 }
-
-func GetAnnotations(input map[string][]string, targets map[string]string) map[string][]string {
-	if len(input) == 0 || len(targets) == 0 {
-		return nil
-	}
-	out := map[string][]string{}
-	for k, t := range targets {
-		if v, ok := input[k]; ok {
-			out[t] = v
-		}
-	}
-	return out
-}

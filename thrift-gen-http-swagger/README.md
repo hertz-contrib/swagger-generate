@@ -93,9 +93,13 @@ thrift-gen-http-swagger --version
 ## Usage
 
 ```sh
+thriftgo -g go -p http-swagger hello.thrift
+```
 
-thriftgo -g go -p http-swagger:OutputDir={swagger documentation output directory} {idl}.thrift
+### Bind Swagger Service to Enable Swagger UI in Hertz Server
 
+```sh
+swagger.BindSwagger(r)
 ```
 
 ## More info

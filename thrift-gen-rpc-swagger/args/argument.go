@@ -14,31 +14,24 @@
  * limitations under the License.
  */
 
-package main
+package args
 
 import (
-	"flag"
-	"os"
+	"fmt"
 
-	"github.com/cloudwego/hertz/cmd/hz/util/logs"
-	"github.com/hertz-contrib/swagger-generate/thrift-gen-http-swagger/plugins"
+	"github.com/hertz-contrib/swagger-generate/common/utils"
 )
 
-func main() {
-	var queryVersion bool
+type Arguments struct {
+	OutputDir string
+	HertzAddr string
+	KitexAddr string
+}
 
-	f := flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
-	f.BoolVar(&queryVersion, "version", false, "Show the version of thrift-gen-http-swagger")
-
-	if err := f.Parse(os.Args[1:]); err != nil {
-		logs.Error("Failed to parse flags: %v", err)
-		os.Exit(2)
+func (a *Arguments) Unpack(args []string) error {
+	err := utils.UnpackArgs(args, a)
+	if err != nil {
+		return fmt.Errorf("unpack argument failed: %s", err)
 	}
-
-	if queryVersion {
-		println(plugins.Version)
-		os.Exit(0)
-	}
-
-	os.Exit(plugins.Run())
+	return nil
 }

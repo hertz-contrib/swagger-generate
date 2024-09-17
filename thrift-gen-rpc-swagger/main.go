@@ -21,14 +21,14 @@ import (
 	"os"
 
 	"github.com/cloudwego/hertz/cmd/hz/util/logs"
-	"github.com/hertz-contrib/swagger-generate/thrift-gen-http-swagger/plugins"
+	"github.com/hertz-contrib/swagger-generate/thrift-gen-rpc-swagger/plugins"
 )
 
 func main() {
 	var queryVersion bool
 
 	f := flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
-	f.BoolVar(&queryVersion, "version", false, "Show the version of thrift-gen-http-swagger")
+	f.BoolVar(&queryVersion, "version", false, "Show the version of thrift-gen-rpc-swagger")
 
 	if err := f.Parse(os.Args[1:]); err != nil {
 		logs.Error("Failed to parse flags: %v", err)

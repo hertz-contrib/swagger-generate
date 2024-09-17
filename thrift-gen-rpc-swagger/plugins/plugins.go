@@ -23,8 +23,8 @@ import (
 
 	"github.com/cloudwego/hertz/cmd/hz/util/logs"
 	"github.com/cloudwego/thriftgo/plugin"
-	"github.com/hertz-contrib/swagger-generate/thrift-gen-http-swagger/args"
-	"github.com/hertz-contrib/swagger-generate/thrift-gen-http-swagger/generator"
+	"github.com/hertz-contrib/swagger-generate/thrift-gen-rpc-swagger/args"
+	"github.com/hertz-contrib/swagger-generate/thrift-gen-rpc-swagger/generator"
 )
 
 func Run() int {
@@ -55,7 +55,7 @@ func handleRequest(req *plugin.Request) (err error) {
 	}
 
 	args := new(args.Arguments)
-	if err := args.Unpack(req.PluginParameters); err != nil {
+	if err = args.Unpack(req.PluginParameters); err != nil {
 		return err
 	}
 
@@ -76,7 +76,7 @@ func handleRequest(req *plugin.Request) (err error) {
 	res := &plugin.Response{
 		Contents: append(openapiContent, serverContent...),
 	}
-	if err := handleResponse(res); err != nil {
+	if err = handleResponse(res); err != nil {
 		return err
 	}
 
