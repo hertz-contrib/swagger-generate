@@ -93,7 +93,7 @@ func (g *ServerGenerator) Generate(outputFile *protogen.GeneratedFile) error {
 			return errors.New("failed to write output file")
 		}
 	} else {
-		tmpl, err := template.New("server").Delims("{{", "}}").Parse(consts.CodeGenerationCommentPbRpc + "\n" + tpl.ServerTemplateRpc)
+		tmpl, err := template.New("server").Delims("{{", "}}").Parse(consts.CodeGenerationCommentPbRpc + "\n" + tpl.ServerTemplateRpcPb)
 		if err != nil {
 			return fmt.Errorf("failed to parse template: %w", err)
 		}

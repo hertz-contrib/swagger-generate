@@ -137,13 +137,23 @@ func findThriftFile(fileName string) (string, error) {
 	}
 
 	foundPath := ""
+	relativePath := fileName
+
 	err = filepath.Walk(workingDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
-		if !info.IsDir() && info.Name() == fileName {
-			foundPath = path
-			return filepath.SkipDir
+
+		if !info.IsDir() {
+			relative, err := filepath.Rel(workingDir, path)
+			if err != nil {
+				return err
+			}
+
+			if relative == relativePath {
+				foundPath = path
+				return filepath.SkipDir
+			}
 		}
 		return nil
 	})

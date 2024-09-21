@@ -31,6 +31,7 @@ import (
 	"strings"
 
 	"github.com/bytedance/gopkg/cloud/metainfo"
+	"github.com/cloudwego/dynamicgo/proto"
 	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/cloudwego/hertz/pkg/app/server"
 	"github.com/cloudwego/hertz/pkg/common/hlog"
@@ -129,20 +130,30 @@ func StartServer() {
 	hertzEngine = h.Engine
 }
 
-func findThriftFile(fileName string) (string, error) {
+func findPbFile(fileName string) (string, error) {
 	workingDir, err := os.Getwd()
 	if err != nil {
 		return "", err
 	}
 
 	foundPath := ""
+	relativePath := fileName
+
 	err = filepath.Walk(workingDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
-		if !info.IsDir() && info.Name() == fileName {
-			foundPath = path
-			return filepath.SkipDir
+
+		if !info.IsDir() {
+			relative, err := filepath.Rel(workingDir, path)
+			if err != nil {
+				return err
+			}
+
+			if relative == relativePath {
+				foundPath = path
+				return filepath.SkipDir
+			}
 		}
 		return nil
 	})
@@ -161,23 +172,24 @@ func findThriftFile(fileName string) (string, error) {
 		parentDir = filepath.Dir(parentDir)
 	}
 
-	return "", errors.New("thrift file not found: " + fileName)
+	return "", errors.New("proto file not found: " + fileName)
 }
 
 func initializeGenericClient() genericclient.Client {
-	thriftFile, err := findThriftFile(idlFile)
+	pbFile, err := findPbFile(idlFile)
 	if err != nil {
-		hlog.Fatal("Failed to locate Thrift file:", err)
+		hlog.Fatal("Failed to locate Proto file:", err)
 	}
 
-	p, err := generic.NewThriftFileProviderWithDynamicGo(thriftFile)
+	dOpts := proto.Options{}
+	p, err := generic.NewPbFileProviderWithDynamicGo(pbFile, context.Background(), dOpts)
 	if err != nil {
-		hlog.Fatal("Failed to create ThriftFileProvider:", err)
+		hlog.Fatal("Failed to create PbFileProvider:", err)
 	}
 
-	g, err := generic.JSONThriftGeneric(p)
+	g, err := generic.JSONPbGeneric(p)
 	if err != nil {
-		hlog.Fatal("Failed to create HTTPThriftGeneric:", err)
+		hlog.Fatal("Failed to create JsonPbGeneric:", err)
 	}
 	var opts []client.Option
 	opts = append(opts, client.WithTransportProtocol(transport.TTHeader))
