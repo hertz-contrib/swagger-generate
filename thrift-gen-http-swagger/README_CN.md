@@ -11,6 +11,7 @@
 1. 接口请求字段需要使用注解关联到 HTTP 的某类参数和参数名称, 没有注解的字段不做处理。
 2. 根据 `method` 中的请求 `message` 生成 swagger 中 `operation` 的 `parameters` 和 `requestBody`。
 3. 如果 HTTP 请求是采用 `GET`、`HEAD`、`DELETE` 方式的，那么 `request` 定义中出现的 `api.body` 注解无效，只有`api.query`, `api.path`, `api.cookie`, `api.header` 有效。
+4. rpc 方法的请求只支持 `struct` 和空。
 
 #### 注解说明
 
@@ -28,6 +29,7 @@
 
 1. 接口响应字段需要使用注解关联到 HTTP 的某类参数和参数名称, 没有注解的字段不做处理。
 2. 根据 `method` 中的响应 `message` 生成 swagger 中 `operation` 的 `responses`。
+3. rpc 方法的响应只支持 `struct` 和空。
 
 #### 注解说明
 

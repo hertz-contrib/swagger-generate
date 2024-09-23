@@ -9,7 +9,6 @@ require (
 	github.com/cloudwego/kitex v0.10.3
 	github.com/hertz-contrib/cors v0.1.0
 	github.com/hertz-contrib/swagger v0.1.0
-	github.com/hertz-contrib/swagger-generate v0.0.0
 	github.com/swaggo/files v1.0.1
 	google.golang.org/genproto/googleapis/api v0.0.0-20240730163845-b1a4ccb954bf
 	google.golang.org/protobuf v1.34.2
@@ -43,6 +42,7 @@ require (
 	github.com/google/pprof v0.0.0-20221118152302-e6195bd50e26 // indirect
 	github.com/henrylee2cn/ameda v1.4.10 // indirect
 	github.com/henrylee2cn/goutil v0.0.0-20210127050712-89660552f6f8 // indirect
+	github.com/hertz-contrib/swagger-generate v0.0.0-20240921161005-987932fb30c5 // indirect
 	github.com/iancoleman/strcase v0.3.0 // indirect
 	github.com/jhump/protoreflect v1.12.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
@@ -73,5 +73,3 @@ require (
 )
 
 replace github.com/apache/thrift v0.17.0 => github.com/apache/thrift v0.13.0
-
-replace github.com/hertz-contrib/swagger-generate => ../../swagger-generate

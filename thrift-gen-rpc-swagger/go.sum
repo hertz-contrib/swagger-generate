@@ -175,6 +175,8 @@ github.com/hertz-contrib/cors v0.1.0 h1:PQ5mATygSMzTlYtfyMyHjobYoJeHKe2Qt3tcAOgb
 github.com/hertz-contrib/cors v0.1.0/go.mod h1:VPReoq+Rvu/lZOfpp5CcX3x4mpZUc3EpSXBcVDcbvOc=
 github.com/hertz-contrib/swagger v0.1.0 h1:FlnMPRHuvAt/3pt3KCQRZ6RH1g/agma9SU70Op2Pb58=
 github.com/hertz-contrib/swagger v0.1.0/go.mod h1:Bt5i+Nyo7bGmYbuEfMArx7raf1oK+nWVgYbEvhpICKE=
+github.com/hertz-contrib/swagger-generate v0.0.0-20240921161005-987932fb30c5 h1:3FwLROMErehzzEK5WIkFHj1SXN45AFoCVB9w9LWXg4s=
+github.com/hertz-contrib/swagger-generate v0.0.0-20240921161005-987932fb30c5/go.mod h1:yS1Lb7xyxzEr1YGYpZlfuoR3q+9uA5/ZOfwbmw9Tqe0=
 github.com/huandu/xstrings v1.3.3/go.mod h1:y5/lhBue+AyNmUVz9RLU9xbLR0o4KIIExikq4ovT0aE=
 github.com/iancoleman/strcase v0.2.0 h1:05I4QRnGpI0m37iZQRuskXh+w77mr6Z41lwQzuHLwW0=
 github.com/iancoleman/strcase v0.2.0/go.mod h1:iwCmte+B7n89clKwxIoIXy/HfoL7AsD47ZCWhYzw7ho=

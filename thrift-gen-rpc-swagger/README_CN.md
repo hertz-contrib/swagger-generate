@@ -57,6 +57,7 @@ http://127.0.0.1:8888/swagger/index.html
 2. 可通过注解来补充 swagger 文档的信息，如 `openapi.operation`, `openapi.property`, `openapi.schema`, `api.base_domain`, `api.baseurl`。
 3. 如需使用`openapi.operation`, `openapi.property`, `openapi.schema`, `openpai.document` 注解，需引用 openapi.thrift。
 4. 支持自定义 http 服务，自定义部分更新时不会被覆盖。
+5. rpc 方法的请求和响应只支持`struct`和空类型。
 
 ### 元信息传递
 1. 支持元信息传递, 插件默认为每个方法生成一个`ttheader`的查询参数, 用于传递元信息, 格式需满足 json 格式, 如{"p_k":"p_v","k":"v"}。

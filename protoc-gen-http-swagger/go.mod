@@ -7,7 +7,6 @@ require (
 	github.com/cloudwego/hertz/cmd/hz v0.9.1
 	github.com/hertz-contrib/cors v0.1.0
 	github.com/hertz-contrib/swagger v0.1.0
-	github.com/hertz-contrib/swagger-generate v0.0.0
 	github.com/swaggo/files v1.0.1
 	google.golang.org/genproto/googleapis/api v0.0.0-20240701130421-f6361c86f094
 	google.golang.org/protobuf v1.34.2
@@ -32,6 +31,7 @@ require (
 	github.com/google/go-cmp v0.5.9 // indirect
 	github.com/henrylee2cn/ameda v1.4.10 // indirect
 	github.com/henrylee2cn/goutil v0.0.0-20210127050712-89660552f6f8 // indirect
+	github.com/hertz-contrib/swagger-generate v0.0.0-20240921161005-987932fb30c5 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/klauspost/cpuid/v2 v2.0.9 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
@@ -47,5 +47,3 @@ require (
 	golang.org/x/tools v0.11.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
-
-replace github.com/hertz-contrib/swagger-generate => ../../swagger-generate

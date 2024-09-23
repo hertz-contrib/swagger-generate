@@ -337,6 +337,7 @@ import (
 	"strings"
 
 	"github.com/bytedance/gopkg/cloud/metainfo"
+	"github.com/cloudwego/dynamicgo/proto"
 	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/cloudwego/hertz/pkg/app/server"
 	"github.com/cloudwego/hertz/pkg/common/hlog"

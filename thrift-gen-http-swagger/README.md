@@ -11,6 +11,7 @@ HTTP Swagger document generation plugin for [cloudwego/cwgo](https://github.com/
 1. Interface request fields need to be associated with a certain type of HTTP parameter and parameter name using annotations. Fields without annotations will not be processed.
 2. Generate the `parameters` and `requestBody` of the `operation` in Swagger according to the request `message` in the `method`.
 3. If the HTTP request uses the `GET`, `HEAD`, or `DELETE` methods, the `api.body` annotation in the `request` definition is invalid, and only `api.query`, `api.path`, `api.cookie`, `api.header` are valid.
+4. The RPC method request only supports `struct` and empty types.
 
 #### Annotation Explanation
 
@@ -27,7 +28,8 @@ HTTP Swagger document generation plugin for [cloudwego/cwgo](https://github.com/
 ### Response Specification
 
 1. Interface response fields need to be associated with a certain type of HTTP parameter and parameter name using annotations. Fields without annotations will not be processed.
-2. Generate the `responses` of the `operation` in Swagger according to the response `message` in the `method`.
+2. Generate the `responses` of the `operation` in Swagger according to the response `message` in the `method`. 
+3. The RPC method response only supports `struct` and empty types.
 
 #### Annotation Explanation
 

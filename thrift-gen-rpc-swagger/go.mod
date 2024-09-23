@@ -10,8 +10,6 @@ require (
 	github.com/cloudwego/thriftgo v0.3.15
 	github.com/hertz-contrib/cors v0.1.0
 	github.com/hertz-contrib/swagger v0.1.0
-	github.com/hertz-contrib/swagger-generate v0.0.0
+	github.com/hertz-contrib/swagger-generate v0.0.0-20240921161005-987932fb30c5 // indirect
 	github.com/swaggo/files v1.0.1
 )
-
-replace github.com/hertz-contrib/swagger-generate => ../../swagger-generate

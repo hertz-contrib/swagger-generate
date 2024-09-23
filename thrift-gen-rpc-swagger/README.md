@@ -52,6 +52,7 @@ http://127.0.0.1:8888/swagger/index.html
 2. Swagger documentation can be supplemented with annotations such as `openapi.operation`, `openapi.property`, `openapi.schema`, `api.base_domain`, and `api.baseurl`.
 3. To use annotations like `openapi.operation`, `openapi.property`, `openapi.schema`, and `openapi.document`, you need to import `openapi.thrift`.
 4. Custom HTTP services are supported, and custom parts will not be overwritten during updates.
+5. The RPC method request and response only support `struct` and empty types.
 
 ### Metadata Transmission
 1. Metadata transmission is supported. By default, the plugin generates a `ttheader` query parameter for each method to transmit metadata, which should be in JSON format, e.g., `{"p_k":"p_v","k":"v"}`.
