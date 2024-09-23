@@ -4,11 +4,13 @@ go 1.18
 
 require (
 	github.com/bytedance/gopkg v0.1.1
+	github.com/cloudwego/dynamicgo v0.2.9
 	github.com/cloudwego/hertz v0.9.3
 	github.com/cloudwego/hertz/cmd/hz v0.9.1
 	github.com/cloudwego/kitex v0.10.3
 	github.com/hertz-contrib/cors v0.1.0
 	github.com/hertz-contrib/swagger v0.1.0
+	github.com/hertz-contrib/swagger-generate v0.0.0-20240921161005-987932fb30c5
 	github.com/swaggo/files v1.0.1
 	google.golang.org/genproto/googleapis/api v0.0.0-20240730163845-b1a4ccb954bf
 	google.golang.org/protobuf v1.34.2
@@ -22,7 +24,6 @@ require (
 	github.com/bytedance/sonic/loader v0.2.0 // indirect
 	github.com/cloudwego/base64x v0.1.4 // indirect
 	github.com/cloudwego/configmanager v0.2.2 // indirect
-	github.com/cloudwego/dynamicgo v0.2.9 // indirect
 	github.com/cloudwego/fastpb v0.0.4 // indirect
 	github.com/cloudwego/frugal v0.1.15 // indirect
 	github.com/cloudwego/iasm v0.2.0 // indirect
@@ -42,7 +43,6 @@ require (
 	github.com/google/pprof v0.0.0-20221118152302-e6195bd50e26 // indirect
 	github.com/henrylee2cn/ameda v1.4.10 // indirect
 	github.com/henrylee2cn/goutil v0.0.0-20210127050712-89660552f6f8 // indirect
-	github.com/hertz-contrib/swagger-generate v0.0.0-20240921161005-987932fb30c5 // indirect
 	github.com/iancoleman/strcase v0.3.0 // indirect
 	github.com/jhump/protoreflect v1.12.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
