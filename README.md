@@ -2,14 +2,17 @@
 
 English | [中文](README_CN.md)
 
-**Swagger Generate** is a collection of plugins that generate Swagger documentation and provide Swagger-UI access for debugging HTTP and RPC services. This project is compatible with the [CloudWeGo](https://www.cloudwego.io) ecosystem frameworks such as [Cwgo](https://github.com/cloudwego/cwgo), [Hertz](https://github.com/cloudwego/hertz), and [Kitex](https://github.com/cloudwego/kitex). It offers a convenient toolset for developers to automatically generate Swagger documentation, simplifying the API documentation and debugging process.
+**Swagger Generate** is a set of plugin tools designed for HTTP and RPC services, supporting the automatic generation of Swagger documentation and integration with Swagger-UI for debugging. Additionally, it provides the ability to convert Swagger documents into Protobuf or Thrift IDL files, simplifying the API development and maintenance process.
+
+This project is compatible with the [CloudWeGo](https://www.cloudwego.io) ecosystem frameworks such as [Cwgo](https://github.com/cloudwego/cwgo), [Hertz](https://github.com/cloudwego/hertz), and [Kitex](https://github.com/cloudwego/kitex). It offers a convenient toolset for developers to automatically generate Swagger documentation, simplifying the API documentation and debugging process.
 
 ## Included Plugins
 
-- **protoc-gen-http-swagger**: Generates Swagger documentation and provides Swagger UI debugging for HTTP services based on Protobuf.
-- **thrift-gen-http-swagger**: Generates Swagger documentation and provides Swagger UI debugging for HTTP services based on Thrift.
-- **protoc-gen-rpc-swagger**: Generates Swagger documentation and provides Swagger UI debugging for RPC services based on Protobuf.
-- **thrift-gen-rpc-swagger**: Generates Swagger documentation and provides Swagger UI debugging for RPC services based on Thrift.
+- **[protoc-gen-http-swagger](https://github.com/hertz-contrib/swagger-generate/tree/main/thrift-gen-rpc-swagger)**: Generates Swagger documentation and provides Swagger UI debugging for HTTP services based on Protobuf.
+- **[thrift-gen-http-swagger](https://github.com/hertz-contrib/swagger-generate/tree/main/thrift-gen-http-swagger)**: Generates Swagger documentation and provides Swagger UI debugging for HTTP services based on Thrift.
+- **[protoc-gen-rpc-swagger](https://github.com/hertz-contrib/swagger-generate/tree/main/protoc-gen-rpc-swagger)**: Generates Swagger documentation and provides Swagger UI debugging for RPC services based on Protobuf.
+- **[thrift-gen-rpc-swagger](https://github.com/hertz-contrib/swagger-generate/tree/main/thrift-gen-rpc-swagger)**: Generates Swagger documentation and provides Swagger UI debugging for RPC services based on Thrift.
+- **[swagger2idl](https://github.com/hertz-contrib/swagger-generate/tree/main/swagger2idl)**: Converts Swagger documents into Protobuf or Thrift IDL files.
 
 ## Key Advantages
 
@@ -17,6 +20,7 @@ English | [中文](README_CN.md)
 - **Integrated Debugging**: The generated Swagger UI can be used directly for service debugging, supporting both HTTP and RPC modes.
 - **Hertz and Kitex Integration**: Provides seamless documentation generation and debugging support for [Hertz](https://github.com/cloudwego/hertz) and [Kitex](https://github.com/cloudwego/kitex).
 - **Flexible Annotation Support**: Allows extending the generated Swagger documentation through annotations, supporting OpenAPI annotations such as `openapi.operation`, `openapi.schema`, etc.
+- **IDL Conversion**: Supports converting Swagger documents into Protobuf or Thrift IDL files, making it easier for developers to switch between different frameworks.
 
 ## Installation
 
@@ -99,8 +103,13 @@ func main() {
 	}
 }
 ```
-
 For more examples, please refer to [kitex_swagger_gen](https://github.com/cloudwego/kitex-examples/tree/main/bizdemo/kitex_swagger_gen) and [hertz_swagger_gen](https://github.com/cloudwego/hertz-examples/tree/main/bizdemo/hertz_swagger_gen).
+
+### Converting Swagger Documents to IDL Files
+
+```sh
+swagger2idl -o my_output.proto -oa -a openapi.yaml
+```
 
 ## More Information
 

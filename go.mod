@@ -5,6 +5,7 @@ go 1.18
 require (
 	github.com/apache/thrift v0.13.0
 	github.com/google/gnostic-models v0.6.8
+	github.com/iancoleman/strcase v0.3.0
 	google.golang.org/protobuf v1.34.2
 	gopkg.in/yaml.v3 v3.0.1
 )

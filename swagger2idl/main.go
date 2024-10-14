@@ -19,53 +19,159 @@ package main
 import (
 	"log"
 	"os"
-	"strings"
+	"path/filepath"
 
+	"github.com/hertz-contrib/swagger-generate/common/consts"
 	"github.com/hertz-contrib/swagger-generate/swagger2idl/converter"
 	"github.com/hertz-contrib/swagger-generate/swagger2idl/generate"
 	"github.com/hertz-contrib/swagger-generate/swagger2idl/parser"
+	"github.com/urfave/cli/v2"
 )
 
-const defaultProtoFilename = "output.proto"
+var (
+	outputType    string
+	outputFile    string
+	openapiOption bool
+	apiOption     bool
+	namingOption  bool
+)
 
 func main() {
-	// Ensure the OpenAPI file path is provided as a command-line argument
-	if len(os.Args) < 2 {
-		log.Fatal("Please provide the path to the OpenAPI file.")
+	app := &cli.App{
+		Name:  "swagger2idl",
+		Usage: "Convert OpenAPI specs to Protobuf or Thrift IDL",
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:        "type",
+				Aliases:     []string{"t"},
+				Usage:       "Specify output type: 'proto' or 'thrift'. If not provided, inferred from output file extension.",
+				Destination: &outputType,
+			},
+			&cli.StringFlag{
+				Name:        "output",
+				Aliases:     []string{"o"},
+				Usage:       "Specify output file path. If not provided, defaults to output.proto or output.thrift based on the output type.",
+				Destination: &outputFile,
+			},
+			&cli.BoolFlag{
+				Name:        "openapi",
+				Aliases:     []string{"oa"},
+				Usage:       "Include OpenAPI specific options in the output",
+				Destination: &openapiOption,
+			},
+			&cli.BoolFlag{
+				Name:        "api",
+				Aliases:     []string{"a"},
+				Usage:       "Include API specific options in the output",
+				Destination: &apiOption,
+			},
+			&cli.BoolFlag{
+				Name:        "naming",
+				Aliases:     []string{"n"},
+				Usage:       "use naming conventions for the output IDL file",
+				Value:       true,
+				Destination: &namingOption,
+			},
+		},
+		Action: func(c *cli.Context) error {
+			args := c.Args().Slice()
+
+			if len(args) < 1 {
+				log.Fatal("Please provide the path to the OpenAPI file.")
+			}
+
+			openapiFile := args[0]
+
+			// Automatically determine output type based on file extension if not provided
+			if outputType == "" && outputFile != "" {
+				ext := filepath.Ext(outputFile)
+				switch ext {
+				case ".proto":
+					outputType = consts.IDLProto
+				case ".thrift":
+					outputType = consts.IDLThrift
+				default:
+					log.Fatalf("Cannot determine output type from file extension: %s. Use --type to specify explicitly.", ext)
+				}
+			}
+
+			if outputFile == "" {
+				if outputType == consts.IDLProto {
+					outputFile = consts.DefaultProtoFilename
+				} else if outputType == consts.IDLThrift {
+					outputFile = consts.DefaultThriftFilename
+				} else {
+					log.Fatal("Output file must be specified if output type is not provided.")
+				}
+			}
+
+			spec, err := parser.LoadOpenAPISpec(openapiFile)
+			if err != nil {
+				log.Fatalf("Failed to load OpenAPI file: %v", err)
+			}
+
+			converterOption := &converter.ConvertOption{
+				OpenapiOption: openapiOption,
+				ApiOption:     apiOption,
+				NamingOption:  namingOption,
+			}
+
+			var idlContent string
+			var file *os.File
+			var errFile error
+
+			switch outputType {
+			case consts.IDLProto:
+				protoConv := converter.NewProtoConverter(spec, converterOption)
+
+				if err = protoConv.Convert(); err != nil {
+					log.Fatalf("Error during conversion: %v", err)
+				}
+				protoEngine := generate.NewProtoGenerate()
+
+				idlContent, err = protoEngine.Generate(protoConv.GetIdl())
+				if err != nil {
+					log.Fatalf("Error generating proto docs: %v", err)
+				}
+
+				file, errFile = os.Create(outputFile)
+			case consts.IDLThrift:
+				thriftConv := converter.NewThriftConverter(spec, converterOption)
+
+				if err = thriftConv.Convert(); err != nil {
+					log.Fatalf("Error during conversion: %v", err)
+				}
+				thriftEngine := generate.NewThriftGenerate()
+
+				idlContent, err = thriftEngine.Generate(thriftConv.GetIdl())
+				if err != nil {
+					log.Fatalf("Error generating thrift docs: %v", err)
+				}
+
+				file, errFile = os.Create(outputFile)
+			default:
+				log.Fatalf("Invalid output type: %s", outputType)
+			}
+
+			if errFile != nil {
+				log.Fatalf("Failed to create file: %v", errFile)
+			}
+			defer func() {
+				if err := file.Close(); err != nil {
+					log.Printf("Error closing file: %v", err)
+				}
+			}()
+
+			if _, err = file.WriteString(idlContent); err != nil {
+				log.Fatalf("Error writing to file: %v", err)
+			}
+
+			return nil
+		},
 	}
 
-	openapiFile := os.Args[1]
-
-	// Load the OpenAPI specification
-	spec, err := parser.LoadOpenAPISpec(openapiFile)
+	err := app.Run(os.Args)
 	if err != nil {
-		log.Fatalf("Failed to load OpenAPI file: %v", err)
-	}
-
-	converter := converter.NewProtoConverter(strings.ReplaceAll(spec.Info.Title, " ", "_"))
-
-	if err = converter.Convert(spec); err != nil {
-		log.Fatalf("Error during conversion: %v", err)
-	}
-
-	protoContent := generate.ConvertToProtoFile(converter.ProtoFile)
-
-	protoFilename := defaultProtoFilename
-	if len(os.Args) > 2 {
-		protoFilename = os.Args[2]
-	}
-
-	protoFile, err := os.Create(protoFilename)
-	if err != nil {
-		log.Fatalf("Failed to create Proto file: %v", err)
-	}
-	defer func() {
-		if err := protoFile.Close(); err != nil {
-			log.Printf("Error closing Proto file: %v", err)
-		}
-	}()
-
-	if _, err = protoFile.WriteString(protoContent); err != nil {
-		log.Fatalf("Error writing to Proto file: %v", err)
+		log.Fatal(err)
 	}
 }
