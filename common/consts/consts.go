@@ -74,9 +74,6 @@ const (
 	DefaultInfoDesc       = "API description"
 	DefaultInfoVersion    = "0.0.1"
 
-	IDLProto  = "proto"
-	IDLThrift = "thrift"
-
 	DocumentOptionServiceType = "service"
 	DocumentOptionStructType  = "struct"
 
@@ -103,13 +100,6 @@ const (
 	DefaultOutputDir         = "swagger"
 	DefaultOutputYamlFile    = "openapi.yaml"
 	DefaultOutputSwaggerFile = "swagger.go"
-	DefaultProtoFilename     = "output.proto"
-	DefaultThriftFilename    = "output.thrift"
-	OpenapiThriftFile        = "openapi.thrift"
-	ApiProtoFile             = "api.proto"
-	OpenapiProtoFile         = "openapi/annotations.proto"
-	EmptyProtoFile           = "google/protobuf/empty.proto"
-	TimestampProtoFile       = "google/protobuf/timestamp.proto"
 
 	DefaultServerURL = "http://127.0.0.1:8888"
 	DefaultKitexAddr = "127.0.0.1:8888"
@@ -122,6 +112,4 @@ const (
 
 	ProtobufValueName = "GoogleProtobufValue"
 	ProtobufAnyName   = "GoogleProtobufAny"
-	EmptyMessage      = "google.protobuf.Empty"
-	TimestampMessage  = "google.protobuf.Timestamp"
 )
