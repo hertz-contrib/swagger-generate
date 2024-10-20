@@ -205,17 +205,26 @@ func (g *OpenAPIGenerator) BuildDocument(arguments *args.Arguments) []*plugin.Ge
 
 func (g *OpenAPIGenerator) getDocumentOption(obj interface{}) error {
 	serviceOrStruct, name := g.getDocumentAnnotationInWhichServiceOrStruct()
+
+	if serviceOrStruct == "" || name == "" {
+		return nil
+	}
+
 	if serviceOrStruct == consts.DocumentOptionServiceType {
 		serviceDesc := g.fileDesc.GetServiceDescriptor(name)
-		err := utils.ParseServiceOption(serviceDesc, consts.OpenapiDocument, obj)
-		if err != nil {
-			return err
+		if serviceDesc != nil {
+			err := utils.ParseServiceOption(serviceDesc, consts.OpenapiDocument, obj)
+			if err != nil {
+				return err
+			}
 		}
 	} else if serviceOrStruct == consts.DocumentOptionStructType {
 		structDesc := g.fileDesc.GetStructDescriptor(name)
-		err := utils.ParseStructOption(structDesc, consts.OpenapiDocument, obj)
-		if err != nil {
-			return err
+		if structDesc != nil {
+			err := utils.ParseStructOption(structDesc, consts.OpenapiDocument, obj)
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil
@@ -224,71 +233,73 @@ func (g *OpenAPIGenerator) getDocumentOption(obj interface{}) error {
 func (g *OpenAPIGenerator) addPathsToDocument(d *openapi.Document, services []*thrift_reflection.ServiceDescriptor) {
 	var err error
 	for _, s := range services {
-		annotationsCount := 0
-		for _, m := range s.GetMethods() {
-			var inputDesc, outputDesc, throwDesc *thrift_reflection.StructDescriptor
+		if s != nil {
+			annotationsCount := 0
+			for _, m := range s.GetMethods() {
+				var inputDesc, outputDesc, throwDesc *thrift_reflection.StructDescriptor
 
-			if len(m.Args) > 0 {
-				if len(m.Args) > 1 {
-					logs.Warnf("function '%s' has more than one argument, but only the first can be used in plugin now", m.GetName())
-				}
-				// TODO: support more argument types
-				if m.Args[0].GetType().IsStruct() {
-					inputDesc, err = m.Args[0].GetType().GetStructDescriptor()
-					if err != nil {
-						logs.Errorf("Error getting arguments descriptor: %s", err)
+				if len(m.Args) > 0 {
+					if len(m.Args) > 1 {
+						logs.Warnf("function '%s' has more than one argument, but only the first can be used in plugin now", m.GetName())
 					}
-				} else {
-					logs.Errorf("now only support struct type for input, but got %s", m.Args[0].GetType().GetName())
+					// TODO: support more argument types
+					if m.Args[0].GetType().IsStruct() {
+						inputDesc, err = m.Args[0].GetType().GetStructDescriptor()
+						if err != nil {
+							logs.Errorf("Error getting arguments descriptor: %s", err)
+						}
+					} else {
+						logs.Errorf("now only support struct type for input, but got %s", m.Args[0].GetType().GetName())
+					}
 				}
-			}
 
-			// TODO: support more response types
-			if m.Response.IsStruct() {
-				outputDesc, err = m.Response.GetStructDescriptor()
+				// TODO: support more response types
+				if m.Response.IsStruct() {
+					outputDesc, err = m.Response.GetStructDescriptor()
+					if err != nil {
+						logs.Errorf("Error getting response descriptor: %s", err)
+					}
+				} else if m.Response.Name != "void" {
+					logs.Errorf("now only support struct type for output, but got %s", m.Response.Name)
+				}
+
+				if len(m.ThrowExceptions) > 0 {
+					throwDesc, err = m.ThrowExceptions[0].GetType().GetExceptionDescriptor()
+					if err != nil {
+						logs.Errorf("Error getting exception descriptor: %s", err)
+					}
+				}
+				var host string
+
+				if urls, ok := m.Annotations[consts.ApiBaseURL]; ok && len(urls) > 0 {
+					host = urls[0]
+				} else if domains, ok := s.Annotations[consts.ApiBaseDomain]; ok && len(domains) > 0 {
+					host = domains[0]
+				}
+
+				annotationsCount++
+				operationID := s.GetName() + "_" + m.GetName()
+				path := "/" + m.GetName()
+				comment := g.filterCommentString(m.Comments)
+
+				op, path2 := g.buildOperation(d, comment, operationID, s.GetName(), path, host, inputDesc, outputDesc, throwDesc)
+
+				newOp := &openapi.Operation{}
+				err = utils.ParseMethodOption(m, consts.OpenapiOperation, &newOp)
 				if err != nil {
-					logs.Errorf("Error getting response descriptor: %s", err)
+					logs.Errorf("Error parsing method option: %s", err)
 				}
-			} else if m.Response.Name != "void" {
-				logs.Errorf("now only support struct type for output, but got %s", m.Response.Name)
-			}
-
-			if len(m.ThrowExceptions) > 0 {
-				throwDesc, err = m.ThrowExceptions[0].GetType().GetExceptionDescriptor()
+				err = common.MergeStructs(op, newOp)
 				if err != nil {
-					logs.Errorf("Error getting exception descriptor: %s", err)
+					logs.Errorf("Error merging method option: %s", err)
 				}
+
+				g.addOperationToDocument(d, op, path2)
 			}
-			var host string
-
-			if urls, ok := m.Annotations[consts.ApiBaseURL]; ok && len(urls) > 0 {
-				host = urls[0]
-			} else if domains, ok := s.Annotations[consts.ApiBaseDomain]; ok && len(domains) > 0 {
-				host = domains[0]
+			if annotationsCount > 0 {
+				comment := g.filterCommentString(s.Comments)
+				d.Tags = append(d.Tags, &openapi.Tag{Name: s.GetName(), Description: comment})
 			}
-
-			annotationsCount++
-			operationID := s.GetName() + "_" + m.GetName()
-			path := "/" + m.GetName()
-			comment := g.filterCommentString(m.Comments)
-
-			op, path2 := g.buildOperation(d, comment, operationID, s.GetName(), path, host, inputDesc, outputDesc, throwDesc)
-
-			newOp := &openapi.Operation{}
-			err = utils.ParseMethodOption(m, consts.OpenapiOperation, &newOp)
-			if err != nil {
-				logs.Errorf("Error parsing method option: %s", err)
-			}
-			err = common.MergeStructs(op, newOp)
-			if err != nil {
-				logs.Errorf("Error merging method option: %s", err)
-			}
-
-			g.addOperationToDocument(d, op, path2)
-		}
-		if annotationsCount > 0 {
-			comment := g.filterCommentString(s.Comments)
-			d.Tags = append(d.Tags, &openapi.Tag{Name: s.GetName(), Description: comment})
 		}
 	}
 }
@@ -329,7 +340,7 @@ func (g *OpenAPIGenerator) buildOperation(
 		bodySchema := g.getSchemaByOption(inputDesc)
 
 		var additionalProperties []*openapi.NamedMediaType
-		if len(bodySchema.Properties.AdditionalProperties) > 0 {
+		if bodySchema != nil && bodySchema.Properties != nil && len(bodySchema.Properties.AdditionalProperties) > 0 {
 			refSchema := &openapi.NamedSchemaOrReference{
 				Name:  inputDesc.GetName(),
 				Value: &openapi.SchemaOrReference{Schema: bodySchema},
@@ -377,7 +388,7 @@ func (g *OpenAPIGenerator) buildOperation(
 			desc = consts.DefaultResponseDesc
 		}
 
-		if len(content.AdditionalProperties) != 0 {
+		if content != nil && len(content.AdditionalProperties) != 0 {
 			contentOrEmpty = content
 		}
 
@@ -477,7 +488,7 @@ func (g *OpenAPIGenerator) getResponseForStruct(d *openapi.Document, desc *thrif
 
 	var additionalProperties []*openapi.NamedMediaType
 
-	if len(bodySchema.Properties.AdditionalProperties) > 0 {
+	if bodySchema != nil && bodySchema.Properties != nil && len(bodySchema.Properties.AdditionalProperties) > 0 {
 		refSchema := &openapi.NamedSchemaOrReference{
 			Name:  desc.GetName(),
 			Value: &openapi.SchemaOrReference{Schema: bodySchema},
@@ -506,7 +517,7 @@ func (g *OpenAPIGenerator) getExceptionForStruct(d *openapi.Document, desc *thri
 
 	var additionalProperties []*openapi.NamedMediaType
 
-	if len(bodySchema.Properties.AdditionalProperties) > 0 {
+	if bodySchema != nil && bodySchema.Properties != nil && len(bodySchema.Properties.AdditionalProperties) > 0 {
 		refSchema := &openapi.NamedSchemaOrReference{
 			Name:  desc.GetName(),
 			Value: &openapi.SchemaOrReference{Schema: bodySchema},

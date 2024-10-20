@@ -224,17 +224,26 @@ func (g *OpenAPIGenerator) BuildDocument(arguments *args.Arguments) []*plugin.Ge
 
 func (g *OpenAPIGenerator) getDocumentOption(obj interface{}) error {
 	serviceOrStruct, name := g.getDocumentAnnotationInWhichServiceOrStruct()
+
+	if serviceOrStruct == "" || name == "" {
+		return nil
+	}
+
 	if serviceOrStruct == consts.DocumentOptionServiceType {
 		serviceDesc := g.fileDesc.GetServiceDescriptor(name)
-		err := utils.ParseServiceOption(serviceDesc, consts.OpenapiDocument, obj)
-		if err != nil {
-			return err
+		if serviceDesc != nil {
+			err := utils.ParseServiceOption(serviceDesc, consts.OpenapiDocument, obj)
+			if err != nil {
+				return err
+			}
 		}
 	} else if serviceOrStruct == consts.DocumentOptionStructType {
 		structDesc := g.fileDesc.GetStructDescriptor(name)
-		err := utils.ParseStructOption(structDesc, consts.OpenapiDocument, obj)
-		if err != nil {
-			return err
+		if structDesc != nil {
+			err := utils.ParseStructOption(structDesc, consts.OpenapiDocument, obj)
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil
@@ -243,80 +252,82 @@ func (g *OpenAPIGenerator) getDocumentOption(obj interface{}) error {
 func (g *OpenAPIGenerator) addPathsToDocument(d *openapi.Document, services []*thrift_reflection.ServiceDescriptor) {
 	var err error
 	for _, s := range services {
-		annotationsCount := 0
-		for _, m := range s.GetMethods() {
-			var inputDesc, outputDesc, throwDesc *thrift_reflection.StructDescriptor
+		if s != nil {
+			annotationsCount := 0
+			for _, m := range s.GetMethods() {
+				var inputDesc, outputDesc, throwDesc *thrift_reflection.StructDescriptor
 
-			rs := utils.GetAnnotations(m.Annotations, HttpMethodAnnotations)
-			if len(rs) == 0 {
-				continue
-			}
-
-			if len(m.Args) > 0 {
-				if len(m.Args) > 1 {
-					logs.Warnf("function '%s' has more than one argument, but only the first can be used in plugin now", m.GetName())
+				rs := utils.GetAnnotations(m.Annotations, HttpMethodAnnotations)
+				if len(rs) == 0 {
+					continue
 				}
-				// TODO: support more argument types
-				if m.Args[0].GetType().IsStruct() {
-					inputDesc, err = m.Args[0].GetType().GetStructDescriptor()
+
+				if len(m.Args) > 0 {
+					if len(m.Args) > 1 {
+						logs.Warnf("function '%s' has more than one argument, but only the first can be used in plugin now", m.GetName())
+					}
+					// TODO: support more argument types
+					if m.Args[0].GetType().IsStruct() {
+						inputDesc, err = m.Args[0].GetType().GetStructDescriptor()
+						if err != nil {
+							logs.Errorf("Error getting arguments descriptor: %s", err)
+						}
+					} else {
+						logs.Errorf("now only support struct type for input, but got %s", m.Args[0].GetType().GetName())
+					}
+				}
+
+				// TODO: support more response types
+				if m.Response.IsStruct() {
+					outputDesc, err = m.Response.GetStructDescriptor()
 					if err != nil {
-						logs.Errorf("Error getting arguments descriptor: %s", err)
+						logs.Errorf("Error getting response descriptor: %s", err)
 					}
-				} else {
-					logs.Errorf("now only support struct type for input, but got %s", m.Args[0].GetType().GetName())
+				} else if m.Response.Name != "void" {
+					logs.Errorf("now only support struct type for output, but got %s", m.Response.Name)
 				}
-			}
 
-			// TODO: support more response types
-			if m.Response.IsStruct() {
-				outputDesc, err = m.Response.GetStructDescriptor()
-				if err != nil {
-					logs.Errorf("Error getting response descriptor: %s", err)
-				}
-			} else if m.Response.Name != "void" {
-				logs.Errorf("now only support struct type for output, but got %s", m.Response.Name)
-			}
-
-			if len(m.ThrowExceptions) > 0 {
-				throwDesc, err = m.ThrowExceptions[0].GetType().GetExceptionDescriptor()
-				if err != nil {
-					logs.Errorf("Error getting exception descriptor: %s", err)
-				}
-			}
-
-			for methodName, path := range rs {
-				if methodName != "" {
-					var host string
-
-					if urls, ok := m.Annotations[consts.ApiBaseURL]; ok && len(urls) > 0 {
-						host = urls[0]
-					} else if domains, ok := s.Annotations[consts.ApiBaseDomain]; ok && len(domains) > 0 {
-						host = domains[0]
-					}
-
-					annotationsCount++
-					operationID := s.GetName() + "_" + m.GetName()
-					comment := g.filterCommentString(m.Comments)
-
-					op, path2 := g.buildOperation(d, methodName, comment, operationID, s.GetName(), path[0], host, inputDesc, outputDesc, throwDesc)
-
-					newOp := &openapi.Operation{}
-					err = utils.ParseMethodOption(m, consts.OpenapiOperation, &newOp)
+				if len(m.ThrowExceptions) > 0 {
+					throwDesc, err = m.ThrowExceptions[0].GetType().GetExceptionDescriptor()
 					if err != nil {
-						logs.Errorf("Error parsing method option: %s", err)
+						logs.Errorf("Error getting exception descriptor: %s", err)
 					}
-					err = common.MergeStructs(op, newOp)
-					if err != nil {
-						logs.Errorf("Error merging method option: %s", err)
-					}
+				}
 
-					g.addOperationToDocument(d, op, path2, methodName)
+				for methodName, path := range rs {
+					if methodName != "" {
+						var host string
+
+						if urls, ok := m.Annotations[consts.ApiBaseURL]; ok && len(urls) > 0 {
+							host = urls[0]
+						} else if domains, ok := s.Annotations[consts.ApiBaseDomain]; ok && len(domains) > 0 {
+							host = domains[0]
+						}
+
+						annotationsCount++
+						operationID := s.GetName() + "_" + m.GetName()
+						comment := g.filterCommentString(m.Comments)
+
+						op, path2 := g.buildOperation(d, methodName, comment, operationID, s.GetName(), path[0], host, inputDesc, outputDesc, throwDesc)
+
+						newOp := &openapi.Operation{}
+						err = utils.ParseMethodOption(m, consts.OpenapiOperation, &newOp)
+						if err != nil {
+							logs.Errorf("Error parsing method option: %s", err)
+						}
+						err = common.MergeStructs(op, newOp)
+						if err != nil {
+							logs.Errorf("Error merging method option: %s", err)
+						}
+
+						g.addOperationToDocument(d, op, path2, methodName)
+					}
 				}
 			}
-		}
-		if annotationsCount > 0 {
-			comment := g.filterCommentString(s.Comments)
-			d.Tags = append(d.Tags, &openapi.Tag{Name: s.GetName(), Description: comment})
+			if annotationsCount > 0 {
+				comment := g.filterCommentString(s.Comments)
+				d.Tags = append(d.Tags, &openapi.Tag{Name: s.GetName(), Description: comment})
+			}
 		}
 	}
 }
@@ -336,117 +347,117 @@ func (g *OpenAPIGenerator) buildOperation(
 	// Parameters array to hold all parameter objects
 	var parameters []*openapi.ParameterOrReference
 
-	for _, v := range inputDesc.GetFields() {
-		var paramName, paramIn, paramDesc string
-		var fieldSchema *openapi.SchemaOrReference
-		required := false
-
-		extOrNil := v.Annotations[consts.ApiQuery]
-		if len(extOrNil) > 0 {
-			if ext := v.Annotations[consts.ApiQuery][0]; ext != "" {
-				paramIn = consts.ParameterInQuery
-				paramName = ext
-				paramDesc = g.filterCommentString(v.Comments)
-				fieldSchema = g.schemaOrReferenceForField(v.Type)
-				extPropertyOrNil := v.Annotations[consts.OpenapiProperty]
-				if len(extPropertyOrNil) > 0 {
-					newFieldSchema := &openapi.Schema{}
-					err := utils.ParseFieldOption(v, consts.OpenapiProperty, &newFieldSchema)
-					if err != nil {
-						logs.Errorf("Error parsing field option: %s", err)
-					}
-					common.MergeStructs(fieldSchema.Schema, newFieldSchema)
-				}
-			}
-		}
-		extOrNil = v.Annotations[consts.ApiPath]
-		if len(extOrNil) > 0 {
-			if ext := v.Annotations[consts.ApiPath][0]; ext != "" {
-				paramIn = consts.ParameterInPath
-				paramName = ext
-				paramDesc = g.filterCommentString(v.Comments)
-				fieldSchema = g.schemaOrReferenceForField(v.Type)
-				extPropertyOrNil := v.Annotations[consts.OpenapiProperty]
-				if len(extPropertyOrNil) > 0 {
-					newFieldSchema := &openapi.Schema{}
-					err := utils.ParseFieldOption(v, consts.OpenapiProperty, &newFieldSchema)
-					if err != nil {
-						logs.Errorf("Error parsing field option: %s", err)
-					}
-					common.MergeStructs(fieldSchema.Schema, newFieldSchema)
-				}
-				required = true
-			}
-		}
-		extOrNil = v.Annotations[consts.ApiCookie]
-		if len(extOrNil) > 0 {
-			if ext := v.Annotations[consts.ApiCookie][0]; ext != "" {
-				paramIn = consts.ParameterInCookie
-				paramName = ext
-				paramDesc = g.filterCommentString(v.Comments)
-				fieldSchema = g.schemaOrReferenceForField(v.Type)
-				extPropertyOrNil := v.Annotations[consts.OpenapiProperty]
-				if len(extPropertyOrNil) > 0 {
-					newFieldSchema := &openapi.Schema{}
-					err := utils.ParseFieldOption(v, consts.OpenapiProperty, &newFieldSchema)
-					if err != nil {
-						logs.Errorf("Error parsing field option: %s", err)
-					}
-					common.MergeStructs(fieldSchema.Schema, newFieldSchema)
-				}
-			}
-		}
-		extOrNil = v.Annotations[consts.ApiHeader]
-		if len(extOrNil) > 0 {
-			if ext := v.Annotations[consts.ApiHeader][0]; ext != "" {
-				paramIn = consts.ParameterInHeader
-				paramName = ext
-				paramDesc = g.filterCommentString(v.Comments)
-				fieldSchema = g.schemaOrReferenceForField(v.Type)
-				extPropertyOrNil := v.Annotations[consts.OpenapiProperty]
-				if len(extPropertyOrNil) > 0 {
-					newFieldSchema := &openapi.Schema{}
-					err := utils.ParseFieldOption(v, consts.OpenapiProperty, &newFieldSchema)
-					if err != nil {
-						logs.Errorf("Error parsing field option: %s", err)
-					}
-					common.MergeStructs(fieldSchema.Schema, newFieldSchema)
-				}
-			}
-		}
-
-		parameter := &openapi.Parameter{
-			Name:        paramName,
-			In:          paramIn,
-			Description: paramDesc,
-			Required:    required,
-			Schema:      fieldSchema,
-		}
-
-		var extParameter *openapi.Parameter
-		err := utils.ParseFieldOption(v, consts.OpenapiParameter, &extParameter)
-		if err != nil {
-			logs.Errorf("Error parsing field option: %s", err)
-		}
-		common.MergeStructs(parameter, extParameter)
-
-		// Append the parameter to the parameters array if it was set
-		if paramName != "" && paramIn != "" {
-			parameters = append(parameters, &openapi.ParameterOrReference{
-				Parameter: parameter,
-			})
-		}
-	}
-
 	var RequestBody *openapi.RequestBodyOrReference
 
 	if inputDesc != nil {
+		for _, v := range inputDesc.GetFields() {
+			var paramName, paramIn, paramDesc string
+			var fieldSchema *openapi.SchemaOrReference
+			required := false
+
+			extOrNil := v.Annotations[consts.ApiQuery]
+			if len(extOrNil) > 0 {
+				if ext := v.Annotations[consts.ApiQuery][0]; ext != "" {
+					paramIn = consts.ParameterInQuery
+					paramName = ext
+					paramDesc = g.filterCommentString(v.Comments)
+					fieldSchema = g.schemaOrReferenceForField(v.Type)
+					extPropertyOrNil := v.Annotations[consts.OpenapiProperty]
+					if len(extPropertyOrNil) > 0 && fieldSchema.IsSetSchema() {
+						newFieldSchema := &openapi.Schema{}
+						err := utils.ParseFieldOption(v, consts.OpenapiProperty, &newFieldSchema)
+						if err != nil {
+							logs.Errorf("Error parsing field option: %s", err)
+						}
+						common.MergeStructs(fieldSchema.Schema, newFieldSchema)
+					}
+				}
+			}
+			extOrNil = v.Annotations[consts.ApiPath]
+			if len(extOrNil) > 0 {
+				if ext := v.Annotations[consts.ApiPath][0]; ext != "" {
+					paramIn = consts.ParameterInPath
+					paramName = ext
+					paramDesc = g.filterCommentString(v.Comments)
+					fieldSchema = g.schemaOrReferenceForField(v.Type)
+					extPropertyOrNil := v.Annotations[consts.OpenapiProperty]
+					if len(extPropertyOrNil) > 0 && fieldSchema.IsSetSchema() {
+						newFieldSchema := &openapi.Schema{}
+						err := utils.ParseFieldOption(v, consts.OpenapiProperty, &newFieldSchema)
+						if err != nil {
+							logs.Errorf("Error parsing field option: %s", err)
+						}
+						common.MergeStructs(fieldSchema.Schema, newFieldSchema)
+					}
+					required = true
+				}
+			}
+			extOrNil = v.Annotations[consts.ApiCookie]
+			if len(extOrNil) > 0 {
+				if ext := v.Annotations[consts.ApiCookie][0]; ext != "" {
+					paramIn = consts.ParameterInCookie
+					paramName = ext
+					paramDesc = g.filterCommentString(v.Comments)
+					fieldSchema = g.schemaOrReferenceForField(v.Type)
+					extPropertyOrNil := v.Annotations[consts.OpenapiProperty]
+					if len(extPropertyOrNil) > 0 && fieldSchema.IsSetSchema() {
+						newFieldSchema := &openapi.Schema{}
+						err := utils.ParseFieldOption(v, consts.OpenapiProperty, &newFieldSchema)
+						if err != nil {
+							logs.Errorf("Error parsing field option: %s", err)
+						}
+						common.MergeStructs(fieldSchema.Schema, newFieldSchema)
+					}
+				}
+			}
+			extOrNil = v.Annotations[consts.ApiHeader]
+			if len(extOrNil) > 0 {
+				if ext := v.Annotations[consts.ApiHeader][0]; ext != "" {
+					paramIn = consts.ParameterInHeader
+					paramName = ext
+					paramDesc = g.filterCommentString(v.Comments)
+					fieldSchema = g.schemaOrReferenceForField(v.Type)
+					extPropertyOrNil := v.Annotations[consts.OpenapiProperty]
+					if len(extPropertyOrNil) > 0 && fieldSchema.IsSetSchema() {
+						newFieldSchema := &openapi.Schema{}
+						err := utils.ParseFieldOption(v, consts.OpenapiProperty, &newFieldSchema)
+						if err != nil {
+							logs.Errorf("Error parsing field option: %s", err)
+						}
+						common.MergeStructs(fieldSchema.Schema, newFieldSchema)
+					}
+				}
+			}
+
+			parameter := &openapi.Parameter{
+				Name:        paramName,
+				In:          paramIn,
+				Description: paramDesc,
+				Required:    required,
+				Schema:      fieldSchema,
+			}
+
+			var extParameter *openapi.Parameter
+			err := utils.ParseFieldOption(v, consts.OpenapiParameter, &extParameter)
+			if err != nil {
+				logs.Errorf("Error parsing field option: %s", err)
+			}
+			common.MergeStructs(parameter, extParameter)
+
+			// Append the parameter to the parameters array if it was set
+			if paramName != "" && paramIn != "" {
+				parameters = append(parameters, &openapi.ParameterOrReference{
+					Parameter: parameter,
+				})
+			}
+		}
+
 		if methodName != consts.HttpMethodGet && methodName != consts.HttpMethodHead && methodName != consts.HttpMethodDelete {
 			var additionalProperties []*openapi.NamedMediaType
 
 			bodySchema := g.getSchemaByOption(inputDesc, consts.ApiBody)
 
-			if len(bodySchema.Properties.AdditionalProperties) > 0 {
+			if bodySchema != nil && bodySchema.Properties != nil && len(bodySchema.Properties.AdditionalProperties) > 0 {
 				bodyRefSchema := &openapi.NamedSchemaOrReference{
 					Name:  inputDesc.GetName() + consts.ComponentSchemaSuffixBody,
 					Value: &openapi.SchemaOrReference{Schema: bodySchema},
@@ -468,7 +479,7 @@ func (g *OpenAPIGenerator) buildOperation(
 
 			formSchema := g.getSchemaByOption(inputDesc, consts.ApiForm)
 
-			if len(formSchema.Properties.AdditionalProperties) > 0 {
+			if formSchema != nil && formSchema.Properties != nil && len(formSchema.Properties.AdditionalProperties) > 0 {
 				formRefSchema := &openapi.NamedSchemaOrReference{
 					Name:  inputDesc.GetName() + consts.ComponentSchemaSuffixForm,
 					Value: &openapi.SchemaOrReference{Schema: formSchema},
@@ -499,7 +510,7 @@ func (g *OpenAPIGenerator) buildOperation(
 
 			rawBodySchema := g.getSchemaByOption(inputDesc, consts.ApiRawBody)
 
-			if len(rawBodySchema.Properties.AdditionalProperties) > 0 {
+			if rawBodySchema != nil && rawBodySchema.Properties != nil && len(rawBodySchema.Properties.AdditionalProperties) > 0 {
 				rawBodyRefSchema := &openapi.NamedSchemaOrReference{
 					Name:  inputDesc.GetName() + consts.ComponentSchemaSuffixRawBody,
 					Value: &openapi.SchemaOrReference{Schema: rawBodySchema},
@@ -578,7 +589,7 @@ func (g *OpenAPIGenerator) buildOperation(
 }
 
 func (g *OpenAPIGenerator) processResponse(d *openapi.Document, desc *thrift_reflection.StructDescriptor, statusCode string) *openapi.NamedResponseOrReference {
-	name, header, content := g.getResponseForStruct(d, desc, statusCode)
+	header, content := g.getResponseForStruct(d, desc)
 	description := g.filterCommentString(desc.Comments)
 
 	if description == "" {
@@ -590,12 +601,12 @@ func (g *OpenAPIGenerator) processResponse(d *openapi.Document, desc *thrift_ref
 	}
 
 	var headerOrEmpty *openapi.HeadersOrReferences
-	if len(header.AdditionalProperties) != 0 {
+	if header != nil && len(header.AdditionalProperties) != 0 {
 		headerOrEmpty = header
 	}
 
 	var contentOrEmpty *openapi.MediaTypes
-	if len(content.AdditionalProperties) != 0 {
+	if content != nil && len(content.AdditionalProperties) != 0 {
 		contentOrEmpty = content
 	}
 
@@ -604,7 +615,7 @@ func (g *OpenAPIGenerator) processResponse(d *openapi.Document, desc *thrift_ref
 	}
 
 	return &openapi.NamedResponseOrReference{
-		Name: name,
+		Name: statusCode,
 		Value: &openapi.ResponseOrReference{
 			Response: &openapi.Response{
 				Description: description,
@@ -634,7 +645,7 @@ func (g *OpenAPIGenerator) getDocumentAnnotationInWhichServiceOrStruct() (string
 	return "", ret
 }
 
-func (g *OpenAPIGenerator) getResponseForStruct(d *openapi.Document, desc *thrift_reflection.StructDescriptor, statusCode string) (string, *openapi.HeadersOrReferences, *openapi.MediaTypes) {
+func (g *OpenAPIGenerator) getResponseForStruct(d *openapi.Document, desc *thrift_reflection.StructDescriptor) (*openapi.HeadersOrReferences, *openapi.MediaTypes) {
 	headers := &openapi.HeadersOrReferences{AdditionalProperties: []*openapi.NamedHeaderOrReference{}}
 
 	for _, field := range desc.Fields {
@@ -661,7 +672,7 @@ func (g *OpenAPIGenerator) getResponseForStruct(d *openapi.Document, desc *thrif
 	rawBodySchema := g.getSchemaByOption(desc, consts.ApiRawBody)
 	var additionalProperties []*openapi.NamedMediaType
 
-	if len(bodySchema.Properties.AdditionalProperties) > 0 {
+	if bodySchema != nil && bodySchema.Properties != nil && len(bodySchema.Properties.AdditionalProperties) > 0 {
 		refSchema := &openapi.NamedSchemaOrReference{
 			Name:  desc.GetName() + consts.ComponentSchemaSuffixBody,
 			Value: &openapi.SchemaOrReference{Schema: bodySchema},
@@ -678,7 +689,7 @@ func (g *OpenAPIGenerator) getResponseForStruct(d *openapi.Document, desc *thrif
 		})
 	}
 
-	if len(rawBodySchema.Properties.AdditionalProperties) > 0 {
+	if rawBodySchema != nil && len(rawBodySchema.Properties.AdditionalProperties) > 0 {
 		refSchema := &openapi.NamedSchemaOrReference{
 			Name:  desc.GetName() + consts.ComponentSchemaSuffixRawBody,
 			Value: &openapi.SchemaOrReference{Schema: rawBodySchema},
@@ -699,7 +710,7 @@ func (g *OpenAPIGenerator) getResponseForStruct(d *openapi.Document, desc *thrif
 		AdditionalProperties: additionalProperties,
 	}
 
-	return statusCode, headers, content
+	return headers, content
 }
 
 func (g *OpenAPIGenerator) getSchemaByOption(inputDesc *thrift_reflection.StructDescriptor, option string) *openapi.Schema {

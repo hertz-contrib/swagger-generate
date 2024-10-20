@@ -371,228 +371,236 @@ func (g *OpenAPIGenerator) buildOperation(
 	// Parameters array to hold all parameter objects
 	var parameters []*openapi.ParameterOrReference
 
-	// Iterate through each field in the input message
-	for _, field := range inputMessage.Fields {
-		var paramName, paramIn, paramDesc string
-		var fieldSchema *openapi.SchemaOrReference
-		required := false
-		var ext any
-		// Check for each type of extension (query, path, cookie, header)
-		if ext = proto.GetExtension(field.Desc.Options(), api.E_Query); ext != "" {
-			paramName = proto.GetExtension(field.Desc.Options(), api.E_Query).(string)
-			paramIn = consts.ParameterInQuery
-			paramDesc = g.filterCommentString(field.Comments.Leading)
-			fieldSchema = g.reflect.schemaOrReferenceForField(field.Desc)
-			if schema, ok := fieldSchema.Oneof.(*openapi.SchemaOrReference_Schema); ok {
-				// Merge any `Property` annotations with the current
-				extProperty := proto.GetExtension(field.Desc.Options(), openapi.E_Property)
-				if extProperty != nil {
-					if property, ok := extProperty.(*openapi.Schema); ok {
-						proto.Merge(schema.Schema, property)
-					} else {
-						logs.Errorf("unexpected type for Property: %T", extProperty)
+	var RequestBody *openapi.RequestBodyOrReference
+
+	if inputMessage != nil {
+		// Iterate through each field in the input message
+		for _, field := range inputMessage.Fields {
+			var paramName, paramIn, paramDesc string
+			var fieldSchema *openapi.SchemaOrReference
+			required := false
+			var ext any
+			// Check for each type of extension (query, path, cookie, header)
+			if ext = proto.GetExtension(field.Desc.Options(), api.E_Query); ext != "" {
+				paramName = proto.GetExtension(field.Desc.Options(), api.E_Query).(string)
+				paramIn = consts.ParameterInQuery
+				paramDesc = g.filterCommentString(field.Comments.Leading)
+				fieldSchema = g.reflect.schemaOrReferenceForField(field.Desc)
+				if schema, ok := fieldSchema.Oneof.(*openapi.SchemaOrReference_Schema); ok {
+					// Merge any `Property` annotations with the current
+					extProperty := proto.GetExtension(field.Desc.Options(), openapi.E_Property)
+					if extProperty != nil {
+						if property, ok := extProperty.(*openapi.Schema); ok {
+							proto.Merge(schema.Schema, property)
+						} else {
+							logs.Errorf("unexpected type for Property: %T", extProperty)
+						}
+					}
+				}
+			} else if ext = proto.GetExtension(field.Desc.Options(), api.E_Path); ext != "" {
+				paramName = proto.GetExtension(field.Desc.Options(), api.E_Path).(string)
+				paramIn = consts.ParameterInPath
+				paramDesc = g.filterCommentString(field.Comments.Leading)
+				fieldSchema = g.reflect.schemaOrReferenceForField(field.Desc)
+				if schema, ok := fieldSchema.Oneof.(*openapi.SchemaOrReference_Schema); ok {
+					// Merge any `Property` annotations with the current
+					extProperty := proto.GetExtension(field.Desc.Options(), openapi.E_Property)
+					if extProperty != nil {
+						proto.Merge(schema.Schema, extProperty.(*openapi.Schema))
+					}
+				}
+				// According to the OpenAPI specification, if a path parameter exists, it must be required.
+				required = true
+			} else if ext = proto.GetExtension(field.Desc.Options(), api.E_Cookie); ext != "" {
+				paramName = proto.GetExtension(field.Desc.Options(), api.E_Cookie).(string)
+				paramIn = consts.ParameterInCookie
+				paramDesc = g.filterCommentString(field.Comments.Leading)
+				fieldSchema = g.reflect.schemaOrReferenceForField(field.Desc)
+				if schema, ok := fieldSchema.Oneof.(*openapi.SchemaOrReference_Schema); ok {
+					// Merge any `Property` annotations with the current
+					extProperty := proto.GetExtension(field.Desc.Options(), openapi.E_Property)
+					if extProperty != nil {
+						proto.Merge(schema.Schema, extProperty.(*openapi.Schema))
+					}
+				}
+			} else if ext = proto.GetExtension(field.Desc.Options(), api.E_Header); ext != "" {
+				paramName = proto.GetExtension(field.Desc.Options(), api.E_Header).(string)
+				paramIn = consts.ParameterInHeader
+				paramDesc = g.filterCommentString(field.Comments.Leading)
+				fieldSchema = g.reflect.schemaOrReferenceForField(field.Desc)
+				if schema, ok := fieldSchema.Oneof.(*openapi.SchemaOrReference_Schema); ok {
+					// Merge any `Property` annotations with the current
+					extProperty := proto.GetExtension(field.Desc.Options(), openapi.E_Property)
+					if extProperty != nil {
+						proto.Merge(schema.Schema, extProperty.(*openapi.Schema))
 					}
 				}
 			}
-		} else if ext = proto.GetExtension(field.Desc.Options(), api.E_Path); ext != "" {
-			paramName = proto.GetExtension(field.Desc.Options(), api.E_Path).(string)
-			paramIn = consts.ParameterInPath
-			paramDesc = g.filterCommentString(field.Comments.Leading)
-			fieldSchema = g.reflect.schemaOrReferenceForField(field.Desc)
-			if schema, ok := fieldSchema.Oneof.(*openapi.SchemaOrReference_Schema); ok {
-				// Merge any `Property` annotations with the current
-				extProperty := proto.GetExtension(field.Desc.Options(), openapi.E_Property)
-				if extProperty != nil {
-					proto.Merge(schema.Schema, extProperty.(*openapi.Schema))
+			parameter := &openapi.Parameter{
+				Name:        paramName,
+				In:          paramIn,
+				Description: paramDesc,
+				Required:    required,
+				Schema:      fieldSchema,
+			}
+			extParameter := proto.GetExtension(field.Desc.Options(), openapi.E_Parameter)
+			if extParameter != nil {
+				if parameterExt, ok := extParameter.(*openapi.Parameter); ok {
+					proto.Merge(parameter, parameterExt)
+				} else {
+					logs.Errorf("unexpected type for Parameter: %T", extParameter)
 				}
 			}
-			// According to the OpenAPI specification, if a path parameter exists, it must be required.
-			required = true
-		} else if ext = proto.GetExtension(field.Desc.Options(), api.E_Cookie); ext != "" {
-			paramName = proto.GetExtension(field.Desc.Options(), api.E_Cookie).(string)
-			paramIn = consts.ParameterInCookie
-			paramDesc = g.filterCommentString(field.Comments.Leading)
-			fieldSchema = g.reflect.schemaOrReferenceForField(field.Desc)
-			if schema, ok := fieldSchema.Oneof.(*openapi.SchemaOrReference_Schema); ok {
-				// Merge any `Property` annotations with the current
-				extProperty := proto.GetExtension(field.Desc.Options(), openapi.E_Property)
-				if extProperty != nil {
-					proto.Merge(schema.Schema, extProperty.(*openapi.Schema))
+
+			// Append the parameter to the parameters array if it was set
+			if paramName != "" && paramIn != "" {
+				parameters = append(parameters, &openapi.ParameterOrReference{
+					Oneof: &openapi.ParameterOrReference_Parameter{
+						Parameter: parameter,
+					},
+				})
+			}
+		}
+
+		if methodName != consts.HttpMethodGet && methodName != consts.HttpMethodHead && methodName != consts.HttpMethodDelete {
+			var additionalProperties []*openapi.NamedMediaType
+
+			bodySchema := g.getSchemaByOption(inputMessage, api.E_Body)
+
+			if bodySchema != nil && bodySchema.Properties != nil && len(bodySchema.Properties.AdditionalProperties) > 0 {
+
+				bodyRefSchema := &openapi.NamedSchemaOrReference{
+					Name:  g.reflect.formatMessageName(inputMessage.Desc) + consts.ComponentSchemaSuffixBody,
+					Value: &openapi.SchemaOrReference{Oneof: &openapi.SchemaOrReference_Schema{Schema: bodySchema}},
+				}
+
+				bodyRef := consts.ComponentSchemaPrefix + g.reflect.formatMessageName(inputMessage.Desc) + consts.ComponentSchemaSuffixBody
+
+				g.addSchemaToDocument(d, bodyRefSchema)
+
+				additionalProperties = append(additionalProperties, &openapi.NamedMediaType{
+					Name: consts.ContentTypeJSON,
+					Value: &openapi.MediaType{
+						Schema: &openapi.SchemaOrReference{
+							Oneof: &openapi.SchemaOrReference_Reference{
+								Reference: &openapi.Reference{XRef: bodyRef},
+							},
+						},
+					},
+				})
+			}
+
+			formSchema := g.getSchemaByOption(inputMessage, api.E_Form)
+
+			if formSchema != nil && formSchema.Properties != nil && len(formSchema.Properties.AdditionalProperties) > 0 {
+				formRefSchema := &openapi.NamedSchemaOrReference{
+					Name:  g.reflect.formatMessageName(inputMessage.Desc) + consts.ComponentSchemaSuffixForm,
+					Value: &openapi.SchemaOrReference{Oneof: &openapi.SchemaOrReference_Schema{Schema: formSchema}},
+				}
+
+				formRef := consts.ComponentSchemaPrefix + g.reflect.formatMessageName(inputMessage.Desc) + consts.ComponentSchemaSuffixForm
+
+				g.addSchemaToDocument(d, formRefSchema)
+
+				additionalProperties = append(additionalProperties, &openapi.NamedMediaType{
+					Name: consts.ContentTypeFormMultipart,
+					Value: &openapi.MediaType{
+						Schema: &openapi.SchemaOrReference{
+							Oneof: &openapi.SchemaOrReference_Reference{
+								Reference: &openapi.Reference{XRef: formRef},
+							},
+						},
+					},
+				})
+
+				additionalProperties = append(additionalProperties, &openapi.NamedMediaType{
+					Name: consts.ContentTypeFormURLEncoded,
+					Value: &openapi.MediaType{
+						Schema: &openapi.SchemaOrReference{
+							Oneof: &openapi.SchemaOrReference_Reference{
+								Reference: &openapi.Reference{XRef: formRef},
+							},
+						},
+					},
+				})
+			}
+
+			rawBodySchema := g.getSchemaByOption(inputMessage, api.E_RawBody)
+
+			if rawBodySchema != nil && rawBodySchema.Properties != nil && len(rawBodySchema.Properties.AdditionalProperties) > 0 {
+				rawBodyRefSchema := &openapi.NamedSchemaOrReference{
+					Name:  g.reflect.formatMessageName(inputMessage.Desc) + consts.ComponentSchemaSuffixRawBody,
+					Value: &openapi.SchemaOrReference{Oneof: &openapi.SchemaOrReference_Schema{Schema: rawBodySchema}},
+				}
+
+				rawBodyRef := consts.ComponentSchemaPrefix + g.reflect.formatMessageName(inputMessage.Desc) + consts.ComponentSchemaSuffixRawBody
+
+				g.addSchemaToDocument(d, rawBodyRefSchema)
+
+				additionalProperties = append(additionalProperties, &openapi.NamedMediaType{
+					Name: consts.ContentTypeRawBody,
+					Value: &openapi.MediaType{
+						Schema: &openapi.SchemaOrReference{
+							Oneof: &openapi.SchemaOrReference_Reference{
+								Reference: &openapi.Reference{XRef: rawBodyRef},
+							},
+						},
+					},
+				})
+			}
+
+			if len(additionalProperties) > 0 {
+				RequestBody = &openapi.RequestBodyOrReference{
+					Oneof: &openapi.RequestBodyOrReference_RequestBody{
+						RequestBody: &openapi.RequestBody{
+							Description: g.filterCommentString(inputMessage.Comments.Leading),
+							Content: &openapi.MediaTypes{
+								AdditionalProperties: additionalProperties,
+							},
+						},
+					},
 				}
 			}
-		} else if ext = proto.GetExtension(field.Desc.Options(), api.E_Header); ext != "" {
-			paramName = proto.GetExtension(field.Desc.Options(), api.E_Header).(string)
-			paramIn = consts.ParameterInHeader
-			paramDesc = g.filterCommentString(field.Comments.Leading)
-			fieldSchema = g.reflect.schemaOrReferenceForField(field.Desc)
-			if schema, ok := fieldSchema.Oneof.(*openapi.SchemaOrReference_Schema); ok {
-				// Merge any `Property` annotations with the current
-				extProperty := proto.GetExtension(field.Desc.Options(), openapi.E_Property)
-				if extProperty != nil {
-					proto.Merge(schema.Schema, extProperty.(*openapi.Schema))
-				}
-			}
-		}
-		parameter := &openapi.Parameter{
-			Name:        paramName,
-			In:          paramIn,
-			Description: paramDesc,
-			Required:    required,
-			Schema:      fieldSchema,
-		}
-		extParameter := proto.GetExtension(field.Desc.Options(), openapi.E_Parameter)
-		if extParameter != nil {
-			if parameterExt, ok := extParameter.(*openapi.Parameter); ok {
-				proto.Merge(parameter, parameterExt)
-			} else {
-				logs.Errorf("unexpected type for Parameter: %T", extParameter)
-			}
-		}
-
-		// Append the parameter to the parameters array if it was set
-		if paramName != "" && paramIn != "" {
-			parameters = append(parameters, &openapi.ParameterOrReference{
-				Oneof: &openapi.ParameterOrReference_Parameter{
-					Parameter: parameter,
-				},
-			})
 		}
 	}
 
-	var RequestBody *openapi.RequestBodyOrReference
-	if methodName != consts.HttpMethodGet && methodName != consts.HttpMethodHead && methodName != consts.HttpMethodDelete {
-		var additionalProperties []*openapi.NamedMediaType
-
-		bodySchema := g.getSchemaByOption(inputMessage, api.E_Body)
-
-		if len(bodySchema.Properties.AdditionalProperties) > 0 {
-
-			bodyRefSchema := &openapi.NamedSchemaOrReference{
-				Name:  g.reflect.formatMessageName(inputMessage.Desc) + consts.ComponentSchemaSuffixBody,
-				Value: &openapi.SchemaOrReference{Oneof: &openapi.SchemaOrReference_Schema{Schema: bodySchema}},
-			}
-
-			bodyRef := consts.ComponentSchemaPrefix + g.reflect.formatMessageName(inputMessage.Desc) + consts.ComponentSchemaSuffixBody
-
-			g.addSchemaToDocument(d, bodyRefSchema)
-
-			additionalProperties = append(additionalProperties, &openapi.NamedMediaType{
-				Name: consts.ContentTypeJSON,
-				Value: &openapi.MediaType{
-					Schema: &openapi.SchemaOrReference{
-						Oneof: &openapi.SchemaOrReference_Reference{
-							Reference: &openapi.Reference{XRef: bodyRef},
-						},
-					},
-				},
-			})
-		}
-
-		formSchema := g.getSchemaByOption(inputMessage, api.E_Form)
-
-		if len(formSchema.Properties.AdditionalProperties) > 0 {
-			formRefSchema := &openapi.NamedSchemaOrReference{
-				Name:  g.reflect.formatMessageName(inputMessage.Desc) + consts.ComponentSchemaSuffixForm,
-				Value: &openapi.SchemaOrReference{Oneof: &openapi.SchemaOrReference_Schema{Schema: formSchema}},
-			}
-
-			formRef := consts.ComponentSchemaPrefix + g.reflect.formatMessageName(inputMessage.Desc) + consts.ComponentSchemaSuffixForm
-
-			g.addSchemaToDocument(d, formRefSchema)
-
-			additionalProperties = append(additionalProperties, &openapi.NamedMediaType{
-				Name: consts.ContentTypeFormMultipart,
-				Value: &openapi.MediaType{
-					Schema: &openapi.SchemaOrReference{
-						Oneof: &openapi.SchemaOrReference_Reference{
-							Reference: &openapi.Reference{XRef: formRef},
-						},
-					},
-				},
-			})
-
-			additionalProperties = append(additionalProperties, &openapi.NamedMediaType{
-				Name: consts.ContentTypeFormURLEncoded,
-				Value: &openapi.MediaType{
-					Schema: &openapi.SchemaOrReference{
-						Oneof: &openapi.SchemaOrReference_Reference{
-							Reference: &openapi.Reference{XRef: formRef},
-						},
-					},
-				},
-			})
-		}
-
-		rawBodySchema := g.getSchemaByOption(inputMessage, api.E_RawBody)
-
-		if len(rawBodySchema.Properties.AdditionalProperties) > 0 {
-			rawBodyRefSchema := &openapi.NamedSchemaOrReference{
-				Name:  g.reflect.formatMessageName(inputMessage.Desc) + consts.ComponentSchemaSuffixRawBody,
-				Value: &openapi.SchemaOrReference{Oneof: &openapi.SchemaOrReference_Schema{Schema: rawBodySchema}},
-			}
-
-			rawBodyRef := consts.ComponentSchemaPrefix + g.reflect.formatMessageName(inputMessage.Desc) + consts.ComponentSchemaSuffixRawBody
-
-			g.addSchemaToDocument(d, rawBodyRefSchema)
-
-			additionalProperties = append(additionalProperties, &openapi.NamedMediaType{
-				Name: consts.ContentTypeRawBody,
-				Value: &openapi.MediaType{
-					Schema: &openapi.SchemaOrReference{
-						Oneof: &openapi.SchemaOrReference_Reference{
-							Reference: &openapi.Reference{XRef: rawBodyRef},
-						},
-					},
-				},
-			})
-		}
-
-		if len(additionalProperties) > 0 {
-			RequestBody = &openapi.RequestBodyOrReference{
-				Oneof: &openapi.RequestBodyOrReference_RequestBody{
-					RequestBody: &openapi.RequestBody{
-						Description: g.filterCommentString(inputMessage.Comments.Leading),
-						Content: &openapi.MediaTypes{
-							AdditionalProperties: additionalProperties,
-						},
-					},
-				},
-			}
-		}
-	}
-
-	name, header, content := g.getResponseForMessage(d, outputMessage)
-
-	desc := g.filterCommentString(outputMessage.Comments.Leading)
-	if desc == "" {
-		desc = consts.DefaultResponseDesc
-	}
-
-	var headerOrEmpty *openapi.HeadersOrReferences
-	if len(header.AdditionalProperties) != 0 {
-		headerOrEmpty = header
-	}
-	var contentOrEmpty *openapi.MediaTypes
-	if len(content.AdditionalProperties) != 0 {
-		contentOrEmpty = content
-	}
 	var responses *openapi.Responses
-	if headerOrEmpty != nil || contentOrEmpty != nil {
-		responses = &openapi.Responses{
-			ResponseOrReference: []*openapi.NamedResponseOrReference{
-				{
-					Name: name,
-					Value: &openapi.ResponseOrReference{
-						Oneof: &openapi.ResponseOrReference_Response{
-							Response: &openapi.Response{
-								Description: desc,
-								Headers:     headerOrEmpty,
-								Content:     contentOrEmpty,
+
+	if outputMessage != nil {
+		name, header, content := g.getResponseForMessage(d, outputMessage)
+
+		desc := g.filterCommentString(outputMessage.Comments.Leading)
+		if desc == "" {
+			desc = consts.DefaultResponseDesc
+		}
+
+		var headerOrEmpty *openapi.HeadersOrReferences
+		if header != nil && len(header.AdditionalProperties) != 0 {
+			headerOrEmpty = header
+		}
+
+		var contentOrEmpty *openapi.MediaTypes
+		if content != nil && len(content.AdditionalProperties) != 0 {
+			contentOrEmpty = content
+		}
+
+		if headerOrEmpty != nil || contentOrEmpty != nil {
+			responses = &openapi.Responses{
+				ResponseOrReference: []*openapi.NamedResponseOrReference{
+					{
+						Name: name,
+						Value: &openapi.ResponseOrReference{
+							Oneof: &openapi.ResponseOrReference_Response{
+								Response: &openapi.Response{
+									Description: desc,
+									Headers:     headerOrEmpty,
+									Content:     contentOrEmpty,
+								},
 							},
 						},
 					},
 				},
-			},
+			}
 		}
 	}
 
@@ -644,7 +652,7 @@ func (g *OpenAPIGenerator) getResponseForMessage(d *openapi.Document, message *p
 
 	var additionalProperties []*openapi.NamedMediaType
 
-	if len(bodySchema.Properties.AdditionalProperties) > 0 {
+	if bodySchema != nil && bodySchema.Properties != nil && len(bodySchema.Properties.AdditionalProperties) > 0 {
 		refSchema := &openapi.NamedSchemaOrReference{
 			Name:  g.reflect.formatMessageName(message.Desc) + consts.ComponentSchemaSuffixBody,
 			Value: &openapi.SchemaOrReference{Oneof: &openapi.SchemaOrReference_Schema{Schema: bodySchema}},
@@ -663,7 +671,7 @@ func (g *OpenAPIGenerator) getResponseForMessage(d *openapi.Document, message *p
 		})
 	}
 
-	if len(rawBodySchema.Properties.AdditionalProperties) > 0 {
+	if rawBodySchema != nil && rawBodySchema.Properties != nil && len(rawBodySchema.Properties.AdditionalProperties) > 0 {
 		refSchema := &openapi.NamedSchemaOrReference{
 			Name:  g.reflect.formatMessageName(message.Desc) + consts.ComponentSchemaSuffixRawBody,
 			Value: &openapi.SchemaOrReference{Oneof: &openapi.SchemaOrReference_Schema{Schema: rawBodySchema}},

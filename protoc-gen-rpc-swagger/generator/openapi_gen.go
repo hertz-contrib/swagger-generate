@@ -368,70 +368,76 @@ func (g *OpenAPIGenerator) buildOperation(
 	var RequestBody *openapi.RequestBodyOrReference
 	var additionalProperties []*openapi.NamedMediaType
 
-	bodySchema := g.getSchemaByOption(inputMessage)
+	if inputMessage != nil {
+		bodySchema := g.getSchemaByOption(inputMessage)
 
-	if len(bodySchema.Properties.AdditionalProperties) > 0 {
-		refSchema := &openapi.NamedSchemaOrReference{
-			Name:  g.reflect.formatMessageName(inputMessage.Desc),
-			Value: &openapi.SchemaOrReference{Oneof: &openapi.SchemaOrReference_Schema{Schema: bodySchema}},
-		}
+		if bodySchema != nil && bodySchema.Properties != nil && len(bodySchema.Properties.AdditionalProperties) > 0 {
+			refSchema := &openapi.NamedSchemaOrReference{
+				Name:  g.reflect.formatMessageName(inputMessage.Desc),
+				Value: &openapi.SchemaOrReference{Oneof: &openapi.SchemaOrReference_Schema{Schema: bodySchema}},
+			}
 
-		ref := consts.ComponentSchemaPrefix + g.reflect.formatMessageName(inputMessage.Desc)
+			ref := consts.ComponentSchemaPrefix + g.reflect.formatMessageName(inputMessage.Desc)
 
-		g.addSchemaToDocument(d, refSchema)
+			g.addSchemaToDocument(d, refSchema)
 
-		additionalProperties = append(additionalProperties, &openapi.NamedMediaType{
-			Name: consts.ContentTypeJSON,
-			Value: &openapi.MediaType{
-				Schema: &openapi.SchemaOrReference{
-					Oneof: &openapi.SchemaOrReference_Reference{
-						Reference: &openapi.Reference{XRef: ref},
+			additionalProperties = append(additionalProperties, &openapi.NamedMediaType{
+				Name: consts.ContentTypeJSON,
+				Value: &openapi.MediaType{
+					Schema: &openapi.SchemaOrReference{
+						Oneof: &openapi.SchemaOrReference_Reference{
+							Reference: &openapi.Reference{XRef: ref},
+						},
 					},
 				},
-			},
-		})
-	}
+			})
+		}
 
-	if len(additionalProperties) > 0 {
-		RequestBody = &openapi.RequestBodyOrReference{
-			Oneof: &openapi.RequestBodyOrReference_RequestBody{
-				RequestBody: &openapi.RequestBody{
-					Description: g.filterCommentString(inputMessage.Comments.Leading),
-					Content: &openapi.MediaTypes{
-						AdditionalProperties: additionalProperties,
+		if len(additionalProperties) > 0 {
+			RequestBody = &openapi.RequestBodyOrReference{
+				Oneof: &openapi.RequestBodyOrReference_RequestBody{
+					RequestBody: &openapi.RequestBody{
+						Description: g.filterCommentString(inputMessage.Comments.Leading),
+						Content: &openapi.MediaTypes{
+							AdditionalProperties: additionalProperties,
+						},
 					},
 				},
-			},
+			}
 		}
 	}
 
-	name, content := g.getResponseForMessage(d, outputMessage)
-
-	desc := g.filterCommentString(outputMessage.Comments.Leading)
-	if desc == "" {
-		desc = consts.DefaultResponseDesc
-	}
-
-	var contentOrEmpty *openapi.MediaTypes
-	if len(content.AdditionalProperties) != 0 {
-		contentOrEmpty = content
-	}
 	var responses *openapi.Responses
-	if contentOrEmpty != nil {
-		responses = &openapi.Responses{
-			ResponseOrReference: []*openapi.NamedResponseOrReference{
-				{
-					Name: name,
-					Value: &openapi.ResponseOrReference{
-						Oneof: &openapi.ResponseOrReference_Response{
-							Response: &openapi.Response{
-								Description: desc,
-								Content:     contentOrEmpty,
+
+	if outputMessage != nil {
+		name, content := g.getResponseForMessage(d, outputMessage)
+
+		desc := g.filterCommentString(outputMessage.Comments.Leading)
+		if desc == "" {
+			desc = consts.DefaultResponseDesc
+		}
+
+		var contentOrEmpty *openapi.MediaTypes
+		if content != nil && len(content.AdditionalProperties) != 0 {
+			contentOrEmpty = content
+		}
+
+		if contentOrEmpty != nil {
+			responses = &openapi.Responses{
+				ResponseOrReference: []*openapi.NamedResponseOrReference{
+					{
+						Name: name,
+						Value: &openapi.ResponseOrReference{
+							Oneof: &openapi.ResponseOrReference_Response{
+								Response: &openapi.Response{
+									Description: desc,
+									Content:     contentOrEmpty,
+								},
 							},
 						},
 					},
 				},
-			},
+			}
 		}
 	}
 
@@ -461,7 +467,7 @@ func (g *OpenAPIGenerator) getResponseForMessage(d *openapi.Document, message *p
 
 	var additionalProperties []*openapi.NamedMediaType
 
-	if len(bodySchema.Properties.AdditionalProperties) > 0 {
+	if bodySchema != nil && bodySchema.Properties != nil && len(bodySchema.Properties.AdditionalProperties) > 0 {
 		refSchema := &openapi.NamedSchemaOrReference{
 			Name:  g.reflect.formatMessageName(message.Desc),
 			Value: &openapi.SchemaOrReference{Oneof: &openapi.SchemaOrReference_Schema{Schema: bodySchema}},
