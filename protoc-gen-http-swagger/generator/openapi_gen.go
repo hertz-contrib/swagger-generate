@@ -92,7 +92,7 @@ func NewOpenAPIGenerator(plugin *protogen.Plugin, conf Configuration, inputFiles
 // Run runs the generator.
 func (g *OpenAPIGenerator) Run(outputFile *protogen.GeneratedFile) error {
 	d := g.buildDocument()
-	bytes, err := d.YAMLValue("Generated with " + consts.PluginNameProtocHttpSwagger + "\n" + consts.InfoURL + consts.PluginNameProtocHttpSwagger)
+	bytes, err := d.YAMLValue("Generated with " + consts.PluginNameProtocHttpSwagger + "\n" + consts.InfoURL + "blob/main/" + consts.PluginNameProtocHttpSwagger)
 	if err != nil {
 		return fmt.Errorf("failed to marshal yaml: %s", err.Error())
 	}

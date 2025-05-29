@@ -184,7 +184,7 @@ func (g *OpenAPIGenerator) BuildDocument(arguments *args.Arguments) []*plugin.Ge
 		d.Components.Schemas.AdditionalProperties = pairs
 	}
 
-	bytes, err := d.YAMLValue("Generated with " + consts.PluginNameThriftRpcSwagger + "\n" + consts.InfoURL + consts.PluginNameThriftRpcSwagger)
+	bytes, err := d.YAMLValue("Generated with " + consts.PluginNameThriftRpcSwagger + "\n" + consts.InfoURL + "blob/main/" + consts.PluginNameThriftRpcSwagger)
 	if err != nil {
 		logs.Errorf("Error converting to yaml: %s", err)
 		return nil
