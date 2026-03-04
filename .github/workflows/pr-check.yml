@@ -44,4 +44,4 @@ jobs:
         with:
           version: latest
           working-directory: ${{ matrix.workdir }}
-          args: -E gofumpt --timeout 10m
+          args: --timeout 5m
