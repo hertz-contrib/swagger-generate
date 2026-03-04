@@ -4,16 +4,16 @@ on: [ pull_request ]
 
 jobs:
   compliant:
-    runs-on: [ self-hosted, X64 ]
+    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Check License Header
         uses: apache/skywalking-eyes/header@v0.4.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: typos-action
+      - name: Check Spell
         uses: crate-ci/typos@master
 
   resolve-modules:
@@ -23,7 +23,7 @@ jobs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set execute permission for resolve-modules.sh
         run: chmod +x ./hack/resolve-modules.sh
@@ -38,11 +38,10 @@ jobs:
     strategy:
       matrix: ${{ fromJson(needs.resolve-modules.outputs.matrix) }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Lint
-        uses: golangci/golangci-lint-action@v3
+        uses: golangci/golangci-lint-action@v8
         with:
           version: latest
           working-directory: ${{ matrix.workdir }}
-          args: -E gofumpt --timeout 10m
-          skip-pkg-cache: true
+          args: --timeout 5m
