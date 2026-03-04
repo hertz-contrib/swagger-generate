@@ -229,19 +229,19 @@ func (g *OpenAPIGenerator) getDocumentOption(obj interface{}) error {
 		return nil
 	}
 
-	if serviceOrStruct == consts.DocumentOptionServiceType {
+	switch serviceOrStruct {
+	case consts.DocumentOptionServiceType:
 		serviceDesc := g.fileDesc.GetServiceDescriptor(name)
 		if serviceDesc != nil {
-			err := utils.ParseServiceOption(serviceDesc, consts.OpenapiDocument, obj)
-			if err != nil {
+			if err := utils.ParseServiceOption(serviceDesc, consts.OpenapiDocument, obj); err != nil {
 				return err
 			}
 		}
-	} else if serviceOrStruct == consts.DocumentOptionStructType {
+
+	case consts.DocumentOptionStructType:
 		structDesc := g.fileDesc.GetStructDescriptor(name)
 		if structDesc != nil {
-			err := utils.ParseStructOption(structDesc, consts.OpenapiDocument, obj)
-			if err != nil {
+			if err := utils.ParseStructOption(structDesc, consts.OpenapiDocument, obj); err != nil {
 				return err
 			}
 		}
