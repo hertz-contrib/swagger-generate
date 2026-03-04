@@ -74,10 +74,12 @@ func (r *OpenAPIReflector) formatMessageName(message protoreflect.MessageDescrip
 
 	name := r.getMessageName(message)
 	if !*r.conf.FQSchemaNaming {
-		if typeName == ".google.protobuf.Value" {
+		switch typeName {
+		case ".google.protobuf.Value":
 			name = consts.ProtobufValueName
-		} else if typeName == ".google.protobuf.Any" {
+		case ".google.protobuf.Any":
 			name = consts.ProtobufAnyName
+		default:
 		}
 	}
 
@@ -216,7 +218,7 @@ func (r *OpenAPIReflector) schemaOrReferenceForField(field protoreflect.FieldDes
 		kindSchema = wk.NewStringSchema()
 
 	case protoreflect.EnumKind:
-		kindSchema = wk.NewEnumSchema(*&r.conf.EnumType, field)
+		kindSchema = wk.NewEnumSchema(r.conf.EnumType, field)
 
 	case protoreflect.BoolKind:
 		kindSchema = wk.NewBooleanSchema()
